@@ -1,0 +1,36 @@
+server:
+  port: ${PORT:3002}
+
+spring:
+  application:
+    name: ms-doctor
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/doctors_db}
+      database: ${MONGODB_DATABASE:doctors_db}
+      auto-index-creation: true
+
+# Inter-service URLs
+ms-auth:
+  internal-url: ${MS_AUTH_URL:http://localhost:3001}
+
+ms-appointment:
+  internal-url: ${MS_APPOINTMENT_URL:http://localhost:3003}
+
+# Pagination defaults
+pagination:
+  default-page-size: 10
+  max-page-size: 50
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+logging:
+  level:
+    com.encuentratumedico: DEBUG
+    org.springframework.data.mongodb: INFO
