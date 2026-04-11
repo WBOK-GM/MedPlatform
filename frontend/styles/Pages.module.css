@@ -1,0 +1,263 @@
+.layout { display: flex; flex-direction: column; min-height: 100vh; }
+.main { flex: 1; max-width: 1280px; margin: 0 auto; width: 100%; padding: 36px 32px; animation: fadeUp 0.4s ease both; }
+
+/* ─── Dashboard ─── */
+.welcome { margin-bottom: 40px; }
+.welcome h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+.welcome h1 span { background: linear-gradient(135deg, var(--primary-light), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.welcome p { color: var(--text-muted); margin-top: 6px; }
+
+.cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+.aptCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.aptCard::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--primary), var(--accent));
+  border-radius: 4px 0 0 4px;
+}
+.aptCard:hover { transform: translateY(-4px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+
+.aptDoc { font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
+.aptInfo { font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; }
+.aptInfo span strong { color: var(--text); margin-right: 4px; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 14px;
+}
+.confirmed { background: rgba(16,185,129,0.12); color: var(--accent-light); }
+.pending { background: rgba(245,158,11,0.12); color: #fcd34d; }
+.cancelled { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+.empty { text-align: center; padding: 64px; background: var(--bg-card); border-radius: var(--radius); border: 1px dashed var(--border); color: var(--text-muted); }
+.empty span { display: block; font-size: 2.5rem; margin-bottom: 16px; }
+
+/* ─── Top bar ─── */
+.topBar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
+
+/* ─── Doctors ─── */
+.docHeader { margin-bottom: 32px; }
+.docHeader h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; }
+.docHeader p { color: var(--text-muted); margin-top: 6px; }
+.docGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+
+.docCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: all var(--transition);
+}
+.docCard:hover { transform: translateY(-4px); border-color: var(--primary-light); box-shadow: 0 0 30px rgba(99,102,241,0.15); }
+
+.docAvatar {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+.docName { font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; }
+.docSpec { color: var(--primary-light); font-size: 0.85rem; font-weight: 500; margin-bottom: 16px; }
+.docRating { display: flex; align-items: center; gap: 6px; color: #fcd34d; font-weight: 600; font-size: 0.88rem; margin-bottom: 20px; }
+
+.loading { text-align: center; padding: 80px; color: var(--text-muted); }
+
+/* ─── Spinner ─── */
+.spinner {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary-light);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Doctor card extras ─── */
+.docCity { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px; }
+.docCare { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px; }
+.verified { background: rgba(16,185,129,0.12); color: var(--accent-light); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+
+/* ─── Filters ─── */
+.filters { margin-bottom: 24px; }
+.searchInput {
+  width: 100%; max-width: 400px;
+  padding: 11px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color var(--transition);
+}
+.searchInput::placeholder { color: var(--text-faint); }
+.searchInput:focus { outline: none; border-color: var(--primary-light); }
+
+/* ─── Pagination ─── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 32px; }
+.pageInfo { color: var(--text-muted); font-size: 0.88rem; }
+
+/* ─── Error / Success banners ─── */
+.errorBanner {
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+  border-radius: var(--radius-sm); color: #fca5a5; padding: 12px 16px; font-size: 0.88rem; margin-bottom: 16px;
+}
+.successBanner {
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: var(--radius-sm); color: #6ee7b7; padding: 12px 16px; font-size: 0.88rem; margin-bottom: 16px;
+}
+
+/* ─── Apt Actions ─── */
+.aptActions { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+.cancelBtn {
+  font-size: 0.78rem; font-weight: 600; color: var(--danger); padding: 4px 10px;
+  border: 1px solid rgba(239,68,68,0.3); border-radius: 20px; transition: all var(--transition);
+  cursor: pointer; background: none; font-family: inherit;
+}
+.cancelBtn:hover { background: rgba(239,68,68,0.1); }
+
+/* ─── Book Appointment ─── */
+.bookHeader { display: flex; align-items: center; gap: 20px; margin-bottom: 32px; }
+.bookHeader h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; }
+.bookDoctor { color: var(--text-muted); margin-top: 4px; }
+.backBtn {
+  padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 0.88rem; cursor: pointer; transition: all var(--transition);
+  background: none; font-family: inherit;
+}
+.backBtn:hover { color: var(--text); border-color: var(--border-strong); }
+
+.bookCard { max-width: 680px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 36px; display: flex; flex-direction: column; gap: 28px; }
+.bookStep { display: flex; flex-direction: column; gap: 12px; }
+.stepLabel { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary-light); font-weight: 700; }
+
+.bookDateRow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dateInput {
+  padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; font-family: inherit;
+  color-scheme: dark;
+}
+.dateInput:focus { outline: none; border-color: var(--primary-light); }
+
+.slotsGrid { display: flex; flex-wrap: wrap; gap: 10px; }
+.slot {
+  padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: 0.88rem; cursor: pointer; transition: all var(--transition);
+  background: var(--bg-card); font-family: inherit;
+}
+.slot:hover { border-color: var(--primary-light); color: var(--text); }
+.slotActive { border-color: var(--primary-light) !important; background: rgba(99,102,241,0.12) !important; color: var(--primary-light) !important; font-weight: 600; }
+
+.careSelect { display: flex; gap: 10px; flex-wrap: wrap; }
+.careBtn {
+  padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: 0.88rem; cursor: pointer; transition: all var(--transition);
+  background: var(--bg-card); font-family: inherit;
+}
+.careBtn:hover { border-color: var(--accent); color: var(--text); }
+.careBtnActive { border-color: var(--accent) !important; background: rgba(16,185,129,0.1) !important; color: var(--accent-light) !important; font-weight: 600; }
+
+.notesInput {
+  width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; font-family: inherit;
+  resize: vertical; transition: border-color var(--transition);
+}
+.notesInput::placeholder { color: var(--text-faint); }
+.notesInput:focus { outline: none; border-color: var(--primary-light); }
+
+
+/* ─── Doctor Portal Grid ─── */
+.doctorGrid { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 2rem; margin-top: 1rem; align-items: start; }
+@media (max-width: 768px) { .doctorGrid { grid-template-columns: 1fr; } }
+.sectionTitle { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); }
+.scheduleForm { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ─── Appointment time display ─── */
+.aptTimeBlock { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.aptDate { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.aptTime { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, var(--primary-light), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* ─── Weekly Agenda ─── */
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+@media (max-width: 900px) { .weekGrid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 600px) { .weekGrid { grid-template-columns: repeat(2, 1fr); } }
+
+.weekDay {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  min-height: 80px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.weekDayToday {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 12px rgba(99,102,241,0.15);
+}
+.weekDayHeader {
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;
+}
+.weekDayToday .weekDayHeader { color: var(--primary-light); }
+.weekDayEmpty { font-size: 0.78rem; color: var(--text-faint); text-align: center; margin-top: 6px; }
+
+.slotChip {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 5px 8px; border-radius: 6px;
+  font-size: 0.78rem; font-weight: 600;
+}
+.slotAvailable { background: rgba(16,185,129,0.1); color: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); }
+.slotOccupied  { background: rgba(99,102,241,0.1); color: var(--primary-light);  border: 1px solid rgba(99,102,241,0.2); }
+.slotStatus { font-size: 0.68rem; font-weight: 400; opacity: 0.8; }
+
+/* ─── Doctor History Page ─── */
+.statsRow { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.statCard { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 24px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 90px; }
+.statNum { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; }
+.statLabel { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.statGreen { color: var(--accent-light); }
+.statBlue  { color: var(--primary-light); }
+.statRed   { color: #fca5a5; }
+
+.filterTabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.filterTab { padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border); background: none; color: var(--text-muted); font-size: 0.85rem; font-family: inherit; cursor: pointer; transition: all var(--transition); }
+.filterTab:hover { border-color: var(--primary-light); color: var(--text); }
+.filterTabActive { border-color: var(--primary-light); background: rgba(99,102,241,0.12); color: var(--primary-light); font-weight: 600; }
+
+.historyList { display: flex; flex-direction: column; gap: 10px; }
+.historyRow {
+  display: grid;
+  grid-template-columns: minmax(160px, auto) minmax(140px, auto) 110px 1fr auto;
+  gap: 16px; align-items: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 20px;
+  transition: border-color var(--transition);
+}
+.historyRow:hover { border-color: var(--border-strong); }
+.historyDate { display: flex; flex-direction: column; gap: 3px; font-size: 0.85rem; }
+@media (max-width: 768px) { .historyRow { grid-template-columns: 1fr 1fr; } }
