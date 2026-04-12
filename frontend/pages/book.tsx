@@ -1,11 +1,11 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar/Navbar';
 import Button from '../components/Button/Button';
-import styles from '../styles/Pages.module.css';
 import { appointmentApi } from '../lib/api';
-import { Building2, Monitor, RefreshCw } from 'lucide-react';
+import { Building2, Monitor } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
 
 interface TimeBlock {
   id: string;
@@ -17,6 +17,7 @@ interface TimeBlock {
 
 export default function BookAppointment() {
   const router = useRouter();
+  const { t } = useI18n();
   const { doctorId, doctorName } = router.query;
 
   const [date, setDate] = useState('');
@@ -44,14 +45,14 @@ export default function BookAppointment() {
       });
       setSlots(data);
     } catch {
-      setError('Could not load availability.');
+      setError(t('book.availabilityError'));
     } finally {
       setLoadingSlots(false);
     }
   };
 
   const handleBook = async () => {
-    if (!selectedSlot || !doctorId) { setError('Please select a time slot.'); return; }
+    if (!selectedSlot || !doctorId) { setError(t('book.selectSlot')); return; }
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setLoading(true);
     setError('');
@@ -63,10 +64,10 @@ export default function BookAppointment() {
         care_type: careType,
         notes,
       });
-      setSuccess('🎉 Appointment booked successfully!');
+      setSuccess(t('book.booked'));
       setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e: any) {
-      let msg = e.response?.data?.detail || 'Failed to book appointment.';
+      let msg = e.response?.data?.detail || t('book.bookFailed');
       if (Array.isArray(msg)) msg = msg.map((m: any) => m.msg || JSON.stringify(m)).join(', ');
       setError(msg);
     } finally {
@@ -76,88 +77,83 @@ export default function BookAppointment() {
 
   return (
     <>
-      <Head><title>Book Appointment — MedPlatform</title></Head>
-      <div className={styles.layout}>
+      <Head><title>{t('book.title')} - Encuentra a tu medico</title></Head>
+      <div className="flex min-h-screen flex-col">
         <Navbar />
-        <main className={styles.main}>
-          <div className={styles.bookHeader}>
-            <button className={styles.backBtn} onClick={() => router.back()}>← Back</button>
+        <main className="mx-auto w-full max-w-7xl flex-1 animate-fade-up px-6 py-9 sm:px-8">
+          <div className="mb-8 flex items-center gap-4">
+            <button className="rounded-xl border border-brand-300/70 px-3.5 py-2 text-sm text-secondary-graphite transition-all duration-200 hover:border-brand-700/50 hover:text-brand-900" onClick={() => router.back()}>{t('book.back')}</button>
             <div>
-              <h1>Book an Appointment</h1>
-              <p className={styles.bookDoctor}>with <strong>{doctorName || 'your specialist'}</strong></p>
+              <h1 className="text-3xl font-extrabold tracking-[-0.02em] text-brand-900">{t('book.heading')}</h1>
+              <p className="mt-1 text-secondary-graphite">{t('book.with', { name: String(doctorName || t('book.defaultDoctor')) })}</p>
             </div>
           </div>
 
-          <div className={styles.bookCard}>
-            {/* Step 1: Date */}
-            <div className={styles.bookStep}>
-              <div className={styles.stepLabel}>1 — Select a date</div>
-              <div className={styles.bookDateRow}>
+          <div className="flex max-w-3xl flex-col gap-7 rounded-2xl border border-brand-300/60 bg-white/80 p-8 shadow-soft">
+            <div className="flex flex-col gap-3">
+              <div className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('book.step1')}</div>
+              <div className="flex flex-wrap items-center gap-3">
                 <input
                   type="date"
-                  className={styles.dateInput}
+                  className="rounded-xl border border-brand-300/60 bg-white/85 px-4 py-2.5 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
                   value={date}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={e => setDate(e.target.value)}
                 />
                 <Button variant="accent" onClick={fetchSlots} disabled={!date || loadingSlots}>
-                  {loadingSlots ? 'Loading...' : 'Check availability'}
+                  {loadingSlots ? t('book.loadingSlots') : t('book.checkAvailability')}
                 </Button>
               </div>
             </div>
 
-            {/* Step 2: Time Slots */}
             {slots.length > 0 && (
-              <div className={styles.bookStep}>
-                <div className={styles.stepLabel}>2 — Choose a time slot</div>
-                <div className={styles.slotsGrid}>
+              <div className="flex flex-col gap-3">
+                <div className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('book.step2')}</div>
+                <div className="flex flex-wrap gap-2.5">
                   {slots.map(s => (
                     <button
                       key={s.id}
-                      className={`${styles.slot} ${selectedSlot === s.id ? styles.slotActive : ''}`}
+                      className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 ${selectedSlot === s.id ? 'border-brand-700 bg-brand-700/10 text-brand-800' : 'border-brand-300/70 bg-white/70 text-secondary-graphite hover:border-brand-700/60 hover:text-brand-900'}`}
                       onClick={() => setSelectedSlot(s.id)}
                     >
-                      {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
+                      {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
                     </button>
                   ))}
                 </div>
               </div>
             )}
+
             {slots.length === 0 && date && !loadingSlots && (
-              <div className={styles.bookStep}>
-                <p style={{ color: 'var(--text-muted)' }}>No available slots for this date.</p>
-              </div>
+              <div className="text-sm text-secondary-graphite">{t('book.noSlots')}</div>
             )}
 
-            {/* Step 3: Details */}
-            <div className={styles.bookStep}>
-              <div className={styles.stepLabel}>3 — Appointment type</div>
-              <div className={styles.careSelect}>
+            <div className="flex flex-col gap-3">
+              <div className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('book.step3')}</div>
+              <div className="flex flex-wrap gap-2.5">
                 {['IN_PERSON', 'VIRTUAL'].map(ct => (
                   <button
                     key={ct}
-                    className={`${styles.careBtn} ${careType === ct ? styles.careBtnActive : ''}`}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 ${careType === ct ? 'border-secondary-amber bg-secondary-sand/35 text-brand-900' : 'border-brand-300/70 bg-white/70 text-secondary-graphite hover:border-secondary-amber/70 hover:text-brand-900'}`}
                     onClick={() => setCareType(ct)}
-                    style={{display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'}}
                   >
-                    {ct === 'IN_PERSON' ? <><Building2 size={18}/> In-person</> : <><Monitor size={18}/> Virtual</>}
+                    {ct === 'IN_PERSON' ? <><Building2 size={18} /> {t('common.careType.IN_PERSON')}</> : <><Monitor size={18} /> {t('common.careType.VIRTUAL')}</>}
                   </button>
                 ))}
               </div>
               <textarea
-                className={styles.notesInput}
-                placeholder="Additional notes (symptoms, reason for visit)..."
+                className="w-full resize-y rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 placeholder:text-secondary-gray focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
+                placeholder={t('book.notesPlaceholder')}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
 
-            {error && <div className={styles.errorBanner}>{error}</div>}
-            {success && <div className={styles.successBanner}>{success}</div>}
+            {error && <div className="rounded-xl border border-[#c53d3d]/35 bg-[#c53d3d]/10 px-4 py-3 text-sm text-[#8d2222]">{error}</div>}
+            {success && <div className="rounded-xl border border-[#2f8e4e]/30 bg-[#2f8e4e]/10 px-4 py-3 text-sm text-[#236a3a]">{success}</div>}
 
             <Button full onClick={handleBook} disabled={loading || !selectedSlot}>
-              {loading ? 'Booking...' : 'Confirm Appointment'}
+              {loading ? t('book.booking') : t('book.confirm')}
             </Button>
           </div>
         </main>

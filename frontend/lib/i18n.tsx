@@ -1,0 +1,417 @@
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+export type Language = 'es' | 'en';
+
+type MessageVars = Record<string, string | number>;
+
+type Messages = {
+  [key: string]: string;
+};
+
+const messages: Record<Language, Messages> = {
+  es: {
+    'common.loading': 'Cargando...',
+    'common.today': 'Hoy',
+    'common.status.CONFIRMED': 'Confirmada',
+    'common.status.SCHEDULED': 'Agendada',
+    'common.status.CANCELLED': 'Cancelada',
+    'common.status.COMPLETED': 'Completada',
+    'common.status.AVAILABLE': 'Disponible',
+    'common.status.OCCUPIED': 'Ocupado',
+    'common.status.ALL': 'Todas',
+    'common.careType.IN_PERSON': 'Presencial',
+    'common.careType.PRESENTIAL': 'Presencial',
+    'common.careType.VIRTUAL': 'Virtual',
+    'common.careType.BOTH': 'Ambas',
+
+    'navbar.portal': 'Mi portal',
+    'navbar.history': 'Historial de citas',
+    'navbar.dashboard': 'Panel',
+    'navbar.doctors': 'Doctores',
+    'navbar.logout': 'Cerrar sesión',
+    'navbar.login': 'Iniciar sesión',
+    'navbar.register': 'Registrarse',
+    'navbar.langEs': 'ES',
+    'navbar.langEn': 'EN',
+
+    'home.titleSuffix': 'Turnos médicos inteligentes',
+    'home.badge': 'Arquitectura de microservicios · Con Spring Boot y FastAPI',
+    'home.headingTop': 'Tu salud,',
+    'home.headingGradient': 'gestionada inteligentemente',
+    'home.subtitle': 'Agenda citas con especialistas, organiza tu horario y recibe notificaciones en tiempo real en un solo lugar.',
+    'home.getStarted': 'Comenzar →',
+    'home.signIn': 'Ingresar',
+    'home.microservices': 'Microservicios',
+    'home.databases': 'Bases de datos',
+    'home.appointments': 'Citas',
+
+    'login.title': 'Iniciar sesión',
+    'login.heading': 'Bienvenido de nuevo',
+    'login.subheading': 'Ingresa a tu cuenta para continuar',
+    'login.email': 'Correo electrónico',
+    'login.emailPlaceholder': 'tu@correo.com',
+    'login.password': 'Contraseña',
+    'login.signingIn': 'Ingresando...',
+    'login.signIn': 'Iniciar sesión',
+    'login.invalidCredentials': 'Credenciales inválidas. Intenta de nuevo.',
+    'login.noAccount': '¿No tienes cuenta?',
+    'login.createOne': 'Crear una →',
+
+    'register.title': 'Registro',
+    'register.heading': 'Crear cuenta',
+    'register.subheading': 'Únete a Encuentra a tu medico y toma control de tu salud',
+    'register.fullName': 'Nombre completo',
+    'register.fullNamePlaceholder': 'Juan Perez',
+    'register.email': 'Correo electrónico',
+    'register.emailPlaceholder': 'tu@correo.com',
+    'register.password': 'Contraseña',
+    'register.passwordPlaceholder': 'Crea una contraseña segura',
+    'register.confirmPassword': 'Confirmar contraseña',
+    'register.confirmPasswordPlaceholder': 'Repite la contraseña',
+    'register.creating': 'Creando cuenta...',
+    'register.createAccount': 'Crear cuenta',
+    'register.passwordMismatch': 'Las contraseñas no coinciden.',
+    'register.created': '¡Cuenta creada! Redirigiendo al inicio de sesión...',
+    'register.failed': 'El registro falló. Intenta de nuevo.',
+    'register.alreadyHave': '¿Ya tienes cuenta?',
+    'register.signIn': 'Iniciar sesión →',
+    'register.areYouDoctor': '¿Eres profesional de la salud?',
+    'register.joinDoctor': 'Unirme como doctor',
+
+    'registerDoctor.title': 'Registro de doctor',
+    'registerDoctor.heading': 'Únete como doctor',
+    'registerDoctor.subheading': 'Ayuda a los pacientes y gestiona tus citas fácilmente',
+    'registerDoctor.accountDetails': 'Datos de la cuenta',
+    'registerDoctor.profile': 'Perfil profesional',
+    'registerDoctor.specialization': 'Especialidad',
+    'registerDoctor.specializationPlaceholder': 'ej. Cardiologia',
+    'registerDoctor.yearsExperience': 'Años de experiencia',
+    'registerDoctor.yearsExperiencePlaceholder': 'ej. 10',
+    'registerDoctor.profDescription': 'Descripción profesional',
+    'registerDoctor.profDescriptionPlaceholder': 'Describe brevemente tu experiencia y enfoque de atención...',
+    'registerDoctor.careType': 'Tipo de atención',
+    'registerDoctor.city': 'Ciudad',
+    'registerDoctor.cityPlaceholder': 'ej. Bogota',
+    'registerDoctor.address': 'Dirección',
+    'registerDoctor.addressPlaceholder': 'Dirección del consultorio u hospital',
+    'registerDoctor.registering': 'Registrando...',
+    'registerDoctor.submit': 'Registrarme como doctor',
+    'registerDoctor.created': '¡Perfil de doctor creado! Redirigiendo al inicio de sesión...',
+    'registerDoctor.failed': 'El registro falló. Intenta de nuevo.',
+    'registerDoctor.alreadyHave': '¿Ya tienes cuenta?',
+    'registerDoctor.signIn': 'Iniciar sesión →',
+    'registerDoctor.notDoctor': '¿No eres doctor?',
+    'registerDoctor.registerPatient': 'Registrarme como paciente',
+
+    'dashboard.title': 'Panel',
+    'dashboard.greeting': 'Hola, {name}',
+    'dashboard.fallbackName': 'paciente',
+    'dashboard.upcoming': 'Tus próximas citas',
+    'dashboard.book': '+ Agendar cita',
+    'dashboard.loading': 'Cargando tus citas...',
+    'dashboard.empty': 'Aún no tienes citas.',
+    'dashboard.browseDoctors': 'Ver doctores',
+    'dashboard.drFallback': 'Dr. -',
+    'dashboard.notes': 'Notas:',
+    'dashboard.cancel': 'Cancelar',
+    'dashboard.cancelConfirm': '¿Cancelar esta cita?',
+    'dashboard.cancelFailed': 'No se pudo cancelar.',
+
+    'doctors.title': 'Directorio médico',
+    'doctors.subtitle': 'Encuentra y agenda un especialista para tus necesidades',
+    'doctors.filterPlaceholder': 'Filtrar por especialidad (ej. Cardiología)...',
+    'doctors.loadError': 'No se pudieron cargar los doctores. ¿ms-doctor está corriendo?',
+    'doctors.loading': 'Cargando especialistas...',
+    'doctors.empty': 'No se encontraron doctores. Intenta ajustar tu búsqueda.',
+    'doctors.reviews': 'reseñas',
+    'doctors.new': 'Nuevo',
+    'doctors.verified': 'Verificado',
+    'doctors.book': 'Agendar cita',
+    'doctors.prev': '← Anterior',
+    'doctors.next': 'Siguiente →',
+    'doctors.page': 'Página {current} / {total}',
+
+    'book.title': 'Agendar cita',
+    'book.back': '← Volver',
+    'book.heading': 'Agendar una cita',
+    'book.with': 'con {name}',
+    'book.defaultDoctor': 'tu especialista',
+    'book.step1': '1 - Selecciona una fecha',
+    'book.checkAvailability': 'Ver disponibilidad',
+    'book.loadingSlots': 'Cargando...',
+    'book.step2': '2 - Elige un horario',
+    'book.noSlots': 'No hay horarios disponibles para esta fecha.',
+    'book.step3': '3 - Tipo de cita',
+    'book.notesPlaceholder': 'Notas adicionales (síntomas, motivo de consulta)...',
+    'book.selectSlot': 'Selecciona un horario.',
+    'book.booked': '¡Cita agendada correctamente!',
+    'book.bookFailed': 'No se pudo agendar la cita.',
+    'book.booking': 'Agendando...',
+    'book.confirm': 'Confirmar cita',
+    'book.availabilityError': 'No se pudo cargar la disponibilidad.',
+
+    'doctorDashboard.title': 'Portal del doctor',
+    'doctorDashboard.heading': 'Portal del doctor',
+    'doctorDashboard.subtitle': 'Gestiona tu agenda y revisa tus citas',
+    'doctorDashboard.addAvailability': 'Agregar disponibilidad',
+    'doctorDashboard.date': 'Fecha',
+    'doctorDashboard.start': 'Inicio',
+    'doctorDashboard.end': 'Fin',
+    'doctorDashboard.adding': 'Agregando...',
+    'doctorDashboard.addSlot': 'Agregar horario',
+    'doctorDashboard.endAfterStart': 'La hora de fin debe ser posterior a la de inicio',
+    'doctorDashboard.userNotLoaded': 'La sesión aún no se cargó',
+    'doctorDashboard.slotAdded': '¡Horario agregado!',
+    'doctorDashboard.slotFailed': 'No se pudo agregar el horario',
+    'doctorDashboard.upcoming': 'Próximas citas ({count})',
+    'doctorDashboard.loadingAppointments': 'Cargando...',
+    'doctorDashboard.noAppointments': 'No hay citas programadas todavía.',
+    'doctorDashboard.notes': 'Notas:',
+    'doctorDashboard.weekly': 'Agenda semanal',
+    'doctorDashboard.loadingSchedule': 'Cargando agenda...',
+    'doctorDashboard.free': 'Libre',
+    'doctorDashboard.booked': 'Reservado',
+
+    'doctorHistory.title': 'Historial de citas',
+    'doctorHistory.heading': 'Historial de citas',
+    'doctorHistory.subtitle': 'Registro completo de todas las citas de pacientes',
+    'doctorHistory.total': 'Total',
+    'doctorHistory.confirmed': 'Confirmadas',
+    'doctorHistory.completed': 'Completadas',
+    'doctorHistory.cancelled': 'Canceladas',
+    'doctorHistory.loading': 'Cargando historial...',
+    'doctorHistory.empty': 'No hay citas en esta categoría.',
+  },
+  en: {
+    'common.loading': 'Loading...',
+    'common.today': 'Today',
+    'common.status.CONFIRMED': 'Confirmed',
+    'common.status.SCHEDULED': 'Scheduled',
+    'common.status.CANCELLED': 'Cancelled',
+    'common.status.COMPLETED': 'Completed',
+    'common.status.AVAILABLE': 'Available',
+    'common.status.OCCUPIED': 'Occupied',
+    'common.status.ALL': 'All',
+    'common.careType.IN_PERSON': 'In-person',
+    'common.careType.PRESENTIAL': 'In-person',
+    'common.careType.VIRTUAL': 'Virtual',
+    'common.careType.BOTH': 'Both',
+
+    'navbar.portal': 'My portal',
+    'navbar.history': 'Appointment history',
+    'navbar.dashboard': 'Dashboard',
+    'navbar.doctors': 'Doctors',
+    'navbar.logout': 'Logout',
+    'navbar.login': 'Login',
+    'navbar.register': 'Register',
+    'navbar.langEs': 'ES',
+    'navbar.langEn': 'EN',
+
+    'home.titleSuffix': 'Smart Medical Appointments',
+    'home.badge': 'Microservice Architecture · Powered by Spring Boot & FastAPI',
+    'home.headingTop': 'Your Health,',
+    'home.headingGradient': 'Managed Smartly',
+    'home.subtitle': 'Book appointments with top specialists, manage your schedule, and receive real-time notifications - all in one place.',
+    'home.getStarted': 'Get Started →',
+    'home.signIn': 'Sign In',
+    'home.microservices': 'Microservices',
+    'home.databases': 'Databases',
+    'home.appointments': 'Appointments',
+
+    'login.title': 'Login',
+    'login.heading': 'Welcome Back',
+    'login.subheading': 'Sign in to your account to continue',
+    'login.email': 'Email',
+    'login.emailPlaceholder': 'you@email.com',
+    'login.password': 'Password',
+    'login.signingIn': 'Signing in...',
+    'login.signIn': 'Sign In',
+    'login.invalidCredentials': 'Invalid credentials. Please try again.',
+    'login.noAccount': "Don't have an account?",
+    'login.createOne': 'Create one →',
+
+    'register.title': 'Register',
+    'register.heading': 'Create Account',
+    'register.subheading': 'Join Encuentra a tu medico and take control of your health',
+    'register.fullName': 'Full Name',
+    'register.fullNamePlaceholder': 'John Doe',
+    'register.email': 'Email',
+    'register.emailPlaceholder': 'you@email.com',
+    'register.password': 'Password',
+    'register.passwordPlaceholder': 'Create a strong password',
+    'register.confirmPassword': 'Confirm Password',
+    'register.confirmPasswordPlaceholder': 'Repeat password',
+    'register.creating': 'Creating account...',
+    'register.createAccount': 'Create Account',
+    'register.passwordMismatch': 'Passwords do not match.',
+    'register.created': 'Account created! Redirecting to login...',
+    'register.failed': 'Registration failed. Please try again.',
+    'register.alreadyHave': 'Already have an account?',
+    'register.signIn': 'Sign in →',
+    'register.areYouDoctor': 'Are you a medical professional?',
+    'register.joinDoctor': 'Join as a Doctor',
+
+    'registerDoctor.title': 'Register as a Doctor',
+    'registerDoctor.heading': 'Join as a Doctor',
+    'registerDoctor.subheading': 'Help patients and manage your appointments easily',
+    'registerDoctor.accountDetails': 'Account Details',
+    'registerDoctor.profile': 'Professional Profile',
+    'registerDoctor.specialization': 'Specialization',
+    'registerDoctor.specializationPlaceholder': 'e.g. Cardiology',
+    'registerDoctor.yearsExperience': 'Years of Experience',
+    'registerDoctor.yearsExperiencePlaceholder': 'e.g. 10',
+    'registerDoctor.profDescription': 'Professional Description',
+    'registerDoctor.profDescriptionPlaceholder': 'Briefly describe your experience and approach to care...',
+    'registerDoctor.careType': 'Care Type',
+    'registerDoctor.city': 'City',
+    'registerDoctor.cityPlaceholder': 'e.g. New York',
+    'registerDoctor.address': 'Address',
+    'registerDoctor.addressPlaceholder': 'Clinic or Hospital Address',
+    'registerDoctor.registering': 'Registering...',
+    'registerDoctor.submit': 'Register as Doctor',
+    'registerDoctor.created': 'Doctor profile created! Redirecting to login...',
+    'registerDoctor.failed': 'Registration failed. Please try again.',
+    'registerDoctor.alreadyHave': 'Already have an account?',
+    'registerDoctor.signIn': 'Sign in →',
+    'registerDoctor.notDoctor': 'Not a doctor?',
+    'registerDoctor.registerPatient': 'Register as Patient',
+
+    'dashboard.title': 'Dashboard',
+    'dashboard.greeting': 'Hey, {name}',
+    'dashboard.fallbackName': 'there',
+    'dashboard.upcoming': 'Your upcoming appointments',
+    'dashboard.book': '+ Book Appointment',
+    'dashboard.loading': 'Loading your appointments...',
+    'dashboard.empty': 'No appointments yet.',
+    'dashboard.browseDoctors': 'Browse Doctors',
+    'dashboard.drFallback': 'Dr. -',
+    'dashboard.notes': 'Notes:',
+    'dashboard.cancel': 'Cancel',
+    'dashboard.cancelConfirm': 'Cancel this appointment?',
+    'dashboard.cancelFailed': 'Failed to cancel.',
+
+    'doctors.title': 'Medical Directory',
+    'doctors.subtitle': 'Find and book a specialist that fits your needs',
+    'doctors.filterPlaceholder': 'Filter by specialization (e.g. Cardiology)...',
+    'doctors.loadError': 'Could not load doctors. Is ms-doctor running?',
+    'doctors.loading': 'Loading specialists...',
+    'doctors.empty': 'No doctors found. Try adjusting your search.',
+    'doctors.reviews': 'reviews',
+    'doctors.new': 'New',
+    'doctors.verified': 'Verified',
+    'doctors.book': 'Book Appointment',
+    'doctors.prev': '← Prev',
+    'doctors.next': 'Next →',
+    'doctors.page': 'Page {current} / {total}',
+
+    'book.title': 'Book Appointment',
+    'book.back': '← Back',
+    'book.heading': 'Book an Appointment',
+    'book.with': 'with {name}',
+    'book.defaultDoctor': 'your specialist',
+    'book.step1': '1 - Select a date',
+    'book.checkAvailability': 'Check availability',
+    'book.loadingSlots': 'Loading...',
+    'book.step2': '2 - Choose a time slot',
+    'book.noSlots': 'No available slots for this date.',
+    'book.step3': '3 - Appointment type',
+    'book.notesPlaceholder': 'Additional notes (symptoms, reason for visit)...',
+    'book.selectSlot': 'Please select a time slot.',
+    'book.booked': 'Appointment booked successfully!',
+    'book.bookFailed': 'Failed to book appointment.',
+    'book.booking': 'Booking...',
+    'book.confirm': 'Confirm Appointment',
+    'book.availabilityError': 'Could not load availability.',
+
+    'doctorDashboard.title': 'Doctor Portal',
+    'doctorDashboard.heading': 'Doctor Portal',
+    'doctorDashboard.subtitle': 'Manage your schedule and view patient appointments',
+    'doctorDashboard.addAvailability': 'Add Availability',
+    'doctorDashboard.date': 'Date',
+    'doctorDashboard.start': 'Start',
+    'doctorDashboard.end': 'End',
+    'doctorDashboard.adding': 'Adding...',
+    'doctorDashboard.addSlot': 'Add Slot',
+    'doctorDashboard.endAfterStart': 'End time must be after start time',
+    'doctorDashboard.userNotLoaded': 'User session not loaded yet',
+    'doctorDashboard.slotAdded': 'Slot added!',
+    'doctorDashboard.slotFailed': 'Failed to add schedule',
+    'doctorDashboard.upcoming': 'Upcoming Appointments ({count})',
+    'doctorDashboard.loadingAppointments': 'Loading...',
+    'doctorDashboard.noAppointments': 'No appointments scheduled yet.',
+    'doctorDashboard.notes': 'Notes:',
+    'doctorDashboard.weekly': 'Weekly Schedule',
+    'doctorDashboard.loadingSchedule': 'Loading schedule...',
+    'doctorDashboard.free': 'Free',
+    'doctorDashboard.booked': 'Booked',
+
+    'doctorHistory.title': 'Appointment History',
+    'doctorHistory.heading': 'Appointment History',
+    'doctorHistory.subtitle': 'Full record of all patient appointments',
+    'doctorHistory.total': 'Total',
+    'doctorHistory.confirmed': 'Confirmed',
+    'doctorHistory.completed': 'Completed',
+    'doctorHistory.cancelled': 'Cancelled',
+    'doctorHistory.loading': 'Loading history...',
+    'doctorHistory.empty': 'No appointments in this category.',
+  }
+};
+
+interface I18nContextValue {
+  language: Language;
+  setLanguage: (next: Language) => void;
+  t: (key: string, vars?: MessageVars) => string;
+  locale: string;
+}
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+function getSystemLanguage(): Language {
+  if (typeof navigator === 'undefined') {
+    return 'en';
+  }
+  return navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
+function formatMessage(template: string, vars?: MessageVars): string {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, token) => String(vars[token] ?? `{${token}}`));
+}
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Language>('en');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('lang') as Language | null;
+    const initial = stored === 'es' || stored === 'en' ? stored : getSystemLanguage();
+    setLanguageState(initial);
+  }, []);
+
+  const setLanguage = (next: Language) => {
+    setLanguageState(next);
+    localStorage.setItem('lang', next);
+  };
+
+  const t = (key: string, vars?: MessageVars) => {
+    const dictionary = messages[language];
+    const template = dictionary[key] ?? messages.en[key] ?? key;
+    return formatMessage(template, vars);
+  };
+
+  const value = useMemo<I18nContextValue>(() => ({
+    language,
+    setLanguage,
+    t,
+    locale: language === 'es' ? 'es-CO' : 'en-US',
+  }), [language]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const ctx = useContext(I18nContext);
+  if (!ctx) {
+    throw new Error('useI18n must be used within I18nProvider');
+  }
+  return ctx;
+}
