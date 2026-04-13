@@ -1,10 +1,10 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar/Navbar';
 import Button from '../../components/Button/Button';
-import styles from '../../styles/Pages.module.css';
 import { appointmentApi, authApi } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
 import {
   Stethoscope, Calendar, Clock, Building2, Monitor,
   Plus, ClipboardList, User, ChevronLeft, ChevronRight
@@ -31,21 +31,22 @@ interface Appointment {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  CONFIRMED: 'confirmed', SCHEDULED: 'confirmed',
-  CANCELLED: 'cancelled', COMPLETED: 'confirmed',
+  CONFIRMED: 'bg-[#2f8e4e]/10 text-[#236a3a] border-[#2f8e4e]/25',
+  SCHEDULED: 'bg-[#2f8e4e]/10 text-[#236a3a] border-[#2f8e4e]/25',
+  CANCELLED: 'bg-[#c53d3d]/10 text-[#8d2222] border-[#c53d3d]/25',
+  COMPLETED: 'bg-brand-300/30 text-brand-800 border-brand-300/50',
 };
 
-function fmtTime(t?: string) { return t ? t.slice(0, 5) : '—'; }
-function fmtDate(d?: string) {
-  if (!d) return '—';
+function fmtTime(t?: string) { return t ? t.slice(0, 5) : '-'; }
+function fmtDate(d?: string, locale = 'en-US') {
+  if (!d) return '-';
   const iso = d.includes('T') ? d : d + 'T00:00:00';
-  return new Date(iso).toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short' });
+  return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short' });
 }
 
-/** Return array of 7 Date objects starting from Monday of the given week offset */
 function getWeekDays(weekOffset: number): Date[] {
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon…
+  const dayOfWeek = now.getDay();
   const monday = new Date(now);
   monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + weekOffset * 7);
   monday.setHours(0, 0, 0, 0);
@@ -60,6 +61,7 @@ function toISODate(d: Date) { return d.toISOString().split('T')[0]; }
 
 export default function DoctorDashboard() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientNames, setPatientNames] = useState<Record<string, string>>({});
   const [slots, setSlots] = useState<TimeBlock[]>([]);
@@ -67,31 +69,38 @@ export default function DoctorDashboard() {
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Schedule form
   const [scheduleDate, setScheduleDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleMsg, setScheduleMsg] = useState({ text: '', type: '' });
-
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) { router.replace('/login'); return; }
-    if (user?.role !== 'DOCTOR') { router.replace('/dashboard'); return; }
-    fetchAppointments();
+    const token = localStorage.getItem('token');
+    const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+    setCurrentUser(storedUser);
+
+    if (!token) { router.replace('/login'); return; }
+    if (storedUser?.role !== 'DOCTOR') { router.replace('/dashboard'); return; }
+    fetchAppointments(storedUser?.id);
   }, []);
 
   useEffect(() => {
-    if (user?.id) fetchWeekSlots();
-  }, [weekOffset, user?.id]);
+    if (currentUser?.id) fetchWeekSlots(currentUser.id);
+  }, [weekOffset, currentUser?.id]);
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (doctorId?: string) => {
     setLoading(true);
     try {
-      const { data } = await appointmentApi.get<Appointment[]>(`/doctors/${user.id}/appointments`);
+      if (!doctorId) {
+        setAppointments([]);
+        return;
+      }
+
+      const { data } = await appointmentApi.get<Appointment[]>(`/doctors/${doctorId}/appointments`);
       setAppointments(data);
-      // Fetch patient emails for all unique patient_ids
       const ids = [...new Set(data.map(a => a.patient_id))];
       const nameMap: Record<string, string> = {};
       await Promise.all(ids.map(async (pid) => {
@@ -110,14 +119,13 @@ export default function DoctorDashboard() {
     }
   };
 
-  const fetchWeekSlots = useCallback(async () => {
-    if (!user?.id) return;
+  const fetchWeekSlots = useCallback(async (doctorId: string) => {
     setSlotsLoading(true);
     const days = getWeekDays(weekOffset);
     const dateFrom = toISODate(days[0]);
     const dateTo = toISODate(days[6]);
     try {
-      const { data } = await appointmentApi.get<TimeBlock[]>(`/doctors/${user.id}/schedules`, {
+      const { data } = await appointmentApi.get<TimeBlock[]>(`/doctors/${doctorId}/schedules`, {
         params: { date_from: dateFrom, date_to: dateTo }
       });
       setSlots(data);
@@ -126,27 +134,32 @@ export default function DoctorDashboard() {
     } finally {
       setSlotsLoading(false);
     }
-  }, [weekOffset, user?.id]);
+  }, [weekOffset]);
 
   const handleAddSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     setScheduleMsg({ text: '', type: '' });
     if (startTime >= endTime) {
-      setScheduleMsg({ text: 'End time must be after start time', type: 'error' }); return;
+      setScheduleMsg({ text: t('doctorDashboard.endAfterStart'), type: 'error' }); return;
     }
     setScheduleLoading(true);
     try {
-      await appointmentApi.post(`/doctors/${user.id}/schedules`, {
-        doctor_id: user.id,
+      if (!currentUser?.id) {
+        setScheduleMsg({ text: t('doctorDashboard.userNotLoaded'), type: 'error' });
+        return;
+      }
+
+      await appointmentApi.post(`/doctors/${currentUser.id}/schedules`, {
+        doctor_id: currentUser.id,
         schedule_date: scheduleDate,
         start_time: `${startTime}:00`,
         end_time: `${endTime}:00`,
       });
-      setScheduleMsg({ text: 'Slot added!', type: 'success' });
+      setScheduleMsg({ text: t('doctorDashboard.slotAdded'), type: 'success' });
       setStartTime(''); setEndTime('');
-      fetchWeekSlots();
+      fetchWeekSlots(currentUser.id);
     } catch (err: any) {
-      let msg = err.response?.data?.detail || 'Failed to add schedule';
+      let msg = err.response?.data?.detail || t('doctorDashboard.slotFailed');
       if (Array.isArray(msg)) msg = msg.map((m: any) => m.msg || JSON.stringify(m)).join(', ');
       setScheduleMsg({ text: msg, type: 'error' });
     } finally {
@@ -159,107 +172,102 @@ export default function DoctorDashboard() {
 
   return (
     <>
-      <Head><title>Doctor Portal — MedPlatform</title></Head>
-      <div className={styles.layout}>
+      <Head><title>{t('doctorDashboard.title')} - Encuentra a tu medico</title></Head>
+      <div className="flex min-h-screen flex-col">
         <Navbar />
-        <main className={styles.main}>
-
-          <div className={styles.topBar}>
-            <div className={styles.welcome}>
-              <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                Doctor Portal <Stethoscope size={26} />
-              </h1>
-              <p>Manage your schedule and view patient appointments</p>
-            </div>
+        <main className="mx-auto w-full max-w-7xl flex-1 animate-fade-up px-6 py-9 sm:px-8">
+          <div className="mb-7">
+            <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-[-0.03em] text-brand-900">
+              {t('doctorDashboard.heading')} <Stethoscope size={26} />
+            </h1>
+            <p className="mt-1 text-secondary-graphite">{t('doctorDashboard.subtitle')}</p>
           </div>
 
-          {/* ══════════ SECTION 1: Two-column header ══════════ */}
-          <div className={styles.doctorGrid}>
-            {/* ── Add Availability ── */}
-            <div className={styles.bookCard} style={{ height: 'fit-content' }}>
-              <h2 className={styles.sectionTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} /> Add Availability
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            <div className="rounded-2xl border border-brand-300/60 bg-white/80 p-6 shadow-soft">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-brand-900">
+                <Plus size={18} /> {t('doctorDashboard.addAvailability')}
               </h2>
-              <form onSubmit={handleAddSchedule} className={styles.scheduleForm}>
-                <div className={styles.bookStep}>
-                  <label className={styles.stepLabel}>Date</label>
+              <form onSubmit={handleAddSchedule} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('doctorDashboard.date')}</label>
                   <input
-                    type="date" className={styles.dateInput} value={scheduleDate}
+                    type="date" className="rounded-xl border border-brand-300/60 bg-white/85 px-4 py-2.5 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
+                    value={scheduleDate}
                     min={new Date().toISOString().split('T')[0]}
                     onChange={e => setScheduleDate(e.target.value)} required
                   />
                 </div>
-                <div className={styles.bookDateRow}>
-                  <div className={styles.bookStep} style={{ flex: 1 }}>
-                    <label className={styles.stepLabel}>Start</label>
-                    <input type="time" className={styles.dateInput} value={startTime} onChange={e => setStartTime(e.target.value)} required />
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-1 flex-col gap-2">
+                    <label className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('doctorDashboard.start')}</label>
+                    <input type="time" className="rounded-xl border border-brand-300/60 bg-white/85 px-4 py-2.5 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35" value={startTime} onChange={e => setStartTime(e.target.value)} required />
                   </div>
-                  <div className={styles.bookStep} style={{ flex: 1 }}>
-                    <label className={styles.stepLabel}>End</label>
-                    <input type="time" className={styles.dateInput} value={endTime} onChange={e => setEndTime(e.target.value)} required />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <label className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('doctorDashboard.end')}</label>
+                    <input type="time" className="rounded-xl border border-brand-300/60 bg-white/85 px-4 py-2.5 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35" value={endTime} onChange={e => setEndTime(e.target.value)} required />
                   </div>
                 </div>
                 <Button full type="submit" disabled={scheduleLoading}>
-                  {scheduleLoading ? 'Adding...' : 'Add Slot'}
+                  {scheduleLoading ? t('doctorDashboard.adding') : t('doctorDashboard.addSlot')}
                 </Button>
                 {scheduleMsg.text && (
-                  <div className={scheduleMsg.type === 'error' ? styles.errorBanner : styles.successBanner}>
+                  <div className={`rounded-xl border px-4 py-3 text-sm ${scheduleMsg.type === 'error' ? 'border-[#c53d3d]/35 bg-[#c53d3d]/10 text-[#8d2222]' : 'border-[#2f8e4e]/30 bg-[#2f8e4e]/10 text-[#236a3a]'}`}>
                     {scheduleMsg.text}
                   </div>
                 )}
               </form>
             </div>
 
-            {/* ── Upcoming Appointments ── */}
             <div>
-              <h2 className={styles.sectionTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClipboardList size={18} /> Upcoming Appointments ({upcoming.length})
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-brand-900">
+                <ClipboardList size={18} /> {t('doctorDashboard.upcoming', { count: upcoming.length })}
               </h2>
               {loading ? (
-                <div className={styles.loading}><div className={styles.spinner} /><p>Loading...</p></div>
+                <div className="rounded-2xl border border-brand-300/60 bg-white/80 px-6 py-14 text-center text-secondary-graphite">
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-brand-300/40 border-t-brand-700" />
+                  <p>{t('doctorDashboard.loadingAppointments')}</p>
+                </div>
               ) : upcoming.length === 0 ? (
-                <div className={styles.empty}>
-                  <Calendar size={40} style={{ color: '#555', marginBottom: 12 }} />
-                  <p>No appointments scheduled yet.</p>
+                <div className="rounded-2xl border border-dashed border-brand-300/70 bg-white/75 px-6 py-16 text-center text-secondary-graphite">
+                  <Calendar size={40} className="mx-auto mb-3 text-secondary-gray" />
+                  <p>{t('doctorDashboard.noAppointments')}</p>
                 </div>
               ) : (
-                <div className={styles.cardGrid}>
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                   {upcoming.map(apt => (
-                    <div key={apt.id} className={styles.aptCard}>
-                      {/* Date & Time */}
-                      <div className={styles.aptTimeBlock}>
-                        <span className={styles.aptDate} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div key={apt.id} className="relative overflow-hidden rounded-2xl border border-brand-300/60 bg-white/80 p-6 shadow-soft transition-all duration-200 hover:-translate-y-1 hover:shadow-glass">
+                      <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-800 to-brand-700" />
+                      <div className="mb-2 flex flex-col gap-1">
+                        <span className="flex items-center gap-1.5 text-sm font-semibold text-brand-900">
                           <Calendar size={14} />
-                          {apt.time_block ? fmtDate(apt.time_block.schedule_date) : fmtDate(apt.created_at)}
+                          {apt.time_block ? fmtDate(apt.time_block.schedule_date, locale) : fmtDate(apt.created_at, locale)}
                         </span>
                         {apt.time_block && (
-                          <span className={styles.aptTime} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <Clock size={14} style={{ flexShrink: 0, color: 'var(--primary-light)', WebkitTextFillColor: 'var(--primary-light)' }} />
-                            {fmtTime(apt.time_block.start_time)} – {fmtTime(apt.time_block.end_time)}
+                          <span className="flex items-center gap-1.5 text-lg font-extrabold tracking-[-0.02em] text-brand-700">
+                            <Clock size={14} className="shrink-0" />
+                            {fmtTime(apt.time_block.start_time)} - {fmtTime(apt.time_block.end_time)}
                           </span>
                         )}
                       </div>
 
-                      {/* Patient name/email */}
-                      <div className={styles.aptDoc} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
-                        <User size={14} style={{ color: 'var(--text-muted)' }} />
-                        <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                          {patientNames[apt.patient_id] || '#' + apt.patient_id.slice(0, 8).toUpperCase()}
-                        </span>
+                      <div className="mb-3 mt-2 flex items-center gap-1.5 text-sm text-secondary-graphite">
+                        <User size={14} />
+                        <span>{patientNames[apt.patient_id] || '#' + apt.patient_id.slice(0, 8).toUpperCase()}</span>
                       </div>
 
-                      <div className={styles.aptInfo}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div className="flex flex-col gap-1.5 text-sm text-secondary-graphite">
+                        <span className="flex items-center gap-1.5">
                           {apt.care_type === 'IN_PERSON'
-                            ? <><Building2 size={14} /> In-person</>
-                            : <><Monitor size={14} /> Virtual</>}
+                            ? <><Building2 size={14} /> {t('common.careType.IN_PERSON')}</>
+                            : <><Monitor size={14} /> {t('common.careType.VIRTUAL')}</>}
                         </span>
-                        {apt.notes && <span><strong>Notes:</strong> {apt.notes}</span>}
+                        {apt.notes && <span><strong className="text-brand-900">{t('doctorDashboard.notes')}</strong> {apt.notes}</span>}
                       </div>
 
-                      <div className={styles.aptActions}>
-                        <span className={`${styles.badge} ${styles[STATUS_STYLES[apt.status] || 'pending']}`}>
-                          {apt.status}
+                      <div className="mt-4">
+                        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLES[apt.status] || 'bg-secondary-gray/10 text-secondary-graphite border-secondary-gray/35'}`}>
+                          {t(`common.status.${apt.status}`)}
                         </span>
                       </div>
                     </div>
@@ -269,46 +277,41 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* ══════════ SECTION 2: Weekly Agenda ══════════ */}
-          <div style={{ marginTop: '2.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1rem' }}>
-              <h2 className={styles.sectionTitle} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Calendar size={18} /> Weekly Schedule
+          <div className="mt-10">
+            <div className="mb-4 flex items-center gap-3">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-brand-900">
+                <Calendar size={18} /> {t('doctorDashboard.weekly')}
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                <button className={styles.backBtn} onClick={() => setWeekOffset(w => w - 1)}><ChevronLeft size={16} /></button>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: 180, textAlign: 'center' }}>
-                  {toISODate(weekDays[0])} – {toISODate(weekDays[6])}
-                </span>
-                <button className={styles.backBtn} onClick={() => setWeekOffset(w => w + 1)}><ChevronRight size={16} /></button>
-                <button className={styles.backBtn} onClick={() => setWeekOffset(0)}>Today</button>
+              <div className="ml-auto flex items-center gap-2">
+                <button className="rounded-xl border border-brand-300/70 px-2.5 py-2 text-secondary-graphite transition-all duration-200 hover:border-brand-700/50 hover:text-brand-900" onClick={() => setWeekOffset(w => w - 1)}><ChevronLeft size={16} /></button>
+                <span className="min-w-[180px] text-center text-sm text-secondary-graphite">{toISODate(weekDays[0])} - {toISODate(weekDays[6])}</span>
+                <button className="rounded-xl border border-brand-300/70 px-2.5 py-2 text-secondary-graphite transition-all duration-200 hover:border-brand-700/50 hover:text-brand-900" onClick={() => setWeekOffset(w => w + 1)}><ChevronRight size={16} /></button>
+                <button className="rounded-xl border border-brand-300/70 px-3 py-2 text-sm text-secondary-graphite transition-all duration-200 hover:border-brand-700/50 hover:text-brand-900" onClick={() => setWeekOffset(0)}>{t('common.today')}</button>
               </div>
             </div>
 
             {slotsLoading ? (
-              <div className={styles.loading}><div className={styles.spinner} /><p>Loading schedule...</p></div>
+              <div className="rounded-2xl border border-brand-300/60 bg-white/80 px-6 py-14 text-center text-secondary-graphite">
+                <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-brand-300/40 border-t-brand-700" />
+                <p>{t('doctorDashboard.loadingSchedule')}</p>
+              </div>
             ) : (
-              <div className={styles.weekGrid}>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
                 {weekDays.map(day => {
                   const iso = toISODate(day);
                   const daySlots = slots.filter(s => s.schedule_date === iso);
-                  const dayName = day.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short' });
+                  const dayName = day.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short' });
                   const isToday = iso === toISODate(new Date());
                   return (
-                    <div key={iso} className={`${styles.weekDay} ${isToday ? styles.weekDayToday : ''}`}>
-                      <div className={styles.weekDayHeader}>{dayName}</div>
+                    <div key={iso} className={`min-h-24 rounded-xl border p-2.5 ${isToday ? 'border-brand-700/70 bg-brand-700/5' : 'border-brand-300/60 bg-white/70'}`}>
+                      <div className={`mb-1 text-xs font-bold uppercase tracking-[0.05em] ${isToday ? 'text-brand-700' : 'text-secondary-graphite'}`}>{dayName}</div>
                       {daySlots.length === 0 ? (
-                        <div className={styles.weekDayEmpty}>—</div>
+                        <div className="mt-2 text-center text-xs text-secondary-gray">-</div>
                       ) : (
                         daySlots.map(slot => (
-                          <div
-                            key={slot.id}
-                            className={`${styles.slotChip} ${slot.status === 'AVAILABLE' ? styles.slotAvailable : styles.slotOccupied}`}
-                          >
-                            {fmtTime(slot.start_time)} – {fmtTime(slot.end_time)}
-                            <span className={styles.slotStatus}>
-                              {slot.status === 'AVAILABLE' ? 'Free' : 'Booked'}
-                            </span>
+                          <div key={slot.id} className={`mb-1 flex flex-col rounded-lg border px-2 py-1 text-xs font-semibold ${slot.status === 'AVAILABLE' ? 'border-[#2f8e4e]/30 bg-[#2f8e4e]/10 text-[#236a3a]' : 'border-brand-300/60 bg-brand-300/25 text-brand-800'}`}>
+                            {fmtTime(slot.start_time)} - {fmtTime(slot.end_time)}
+                            <span className="text-[10px] font-normal opacity-80">{slot.status === 'AVAILABLE' ? t('doctorDashboard.free') : t('doctorDashboard.booked')}</span>
                           </div>
                         ))
                       )}
@@ -318,7 +321,6 @@ export default function DoctorDashboard() {
               </div>
             )}
           </div>
-
         </main>
       </div>
     </>

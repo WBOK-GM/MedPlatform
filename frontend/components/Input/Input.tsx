@@ -1,5 +1,4 @@
 import React from 'react';
-import styles from './Input.module.css';
 
 interface Props {
   label: string;
@@ -9,14 +8,15 @@ interface Props {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
-export default function Input({ label, name, type = 'text', value, onChange, placeholder, required }: Props) {
+export default function Input({ label, name, type = 'text', value, onChange, placeholder, required, disabled = false }: Props) {
   return (
-    <div className={styles.group}>
-      <label className={styles.label} htmlFor={name}>{label}</label>
+    <div className="flex w-full flex-col gap-2">
+      <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80" htmlFor={name}>{label}</label>
       <input
-        className={styles.field}
+        className="w-full rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 placeholder:text-secondary-gray focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35 disabled:cursor-not-allowed disabled:opacity-70"
         id={name}
         name={name}
         type={type}
@@ -24,6 +24,7 @@ export default function Input({ label, name, type = 'text', value, onChange, pla
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        disabled={disabled}
       />
     </div>
   );

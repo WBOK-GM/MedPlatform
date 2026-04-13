@@ -1,12 +1,12 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar/Navbar';
 import Button from '../components/Button/Button';
-import styles from '../styles/Pages.module.css';
-import { doctorApi, appointmentApi } from '../lib/api';
-import { 
-  HeartPulse, Brain, Baby, Droplet, Stethoscope, 
+import { doctorApi } from '../lib/api';
+import { useI18n } from '../lib/i18n';
+import {
+  HeartPulse, Brain, Baby, Droplet, Stethoscope,
   MapPin, CheckCircle, Search, Building2, Monitor, Contact
 } from 'lucide-react';
 
@@ -31,15 +31,16 @@ interface PageResponse {
 
 const getSpecialtyIcon = (spec: string) => {
   const norm = spec.toLowerCase();
-  if (norm.includes('cardio')) return <HeartPulse size={48} color="#ff4b4b" />;
-  if (norm.includes('neuro')) return <Brain size={48} color="#b388ff" />;
-  if (norm.includes('pediat')) return <Baby size={48} color="#ffb74d" />;
-  if (norm.includes('derma')) return <Droplet size={48} color="#4fc3f7" />;
-  return <Stethoscope size={48} color="#fff" />;
+  if (norm.includes('cardio')) return <HeartPulse size={44} color="#D89524" />;
+  if (norm.includes('neuro')) return <Brain size={44} color="#73358B" />;
+  if (norm.includes('pediat')) return <Baby size={44} color="#DDCC72" />;
+  if (norm.includes('derma')) return <Droplet size={44} color="#AAB6DD" />;
+  return <Stethoscope size={44} color="#3C2052" />;
 };
 
 export default function Doctors() {
   const router = useRouter();
+  const { t } = useI18n();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,8 +62,8 @@ export default function Doctors() {
       const { data } = await doctorApi.get<PageResponse>('/doctors', { params });
       setDoctors(data.content);
       setTotalPages(data.totalPages);
-    } catch (e: any) {
-      setError('Could not load doctors. Is ms-doctor running?');
+    } catch {
+      setError(t('doctors.loadError'));
     } finally {
       setLoading(false);
     }
@@ -70,71 +71,81 @@ export default function Doctors() {
 
   return (
     <>
-      <Head><title>Medical Directory — MedPlatform</title></Head>
-      <div className={styles.layout}>
+      <Head><title>{t('doctors.title')} - Encuentra a tu medico</title></Head>
+      <div className="flex min-h-screen flex-col">
         <Navbar />
-        <main className={styles.main}>
-          <div className={styles.docHeader}>
-            <h1>Medical Directory</h1>
-            <p>Find and book a specialist that fits your needs</p>
+        <main className="mx-auto w-full max-w-7xl flex-1 animate-fade-up px-6 py-9 sm:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold tracking-[-0.03em] text-brand-900">{t('doctors.title')}</h1>
+            <p className="mt-1 text-secondary-graphite">{t('doctors.subtitle')}</p>
           </div>
 
-          {/* Search filter */}
-          <div className={styles.filters}>
-            <div style={{ position: 'relative', width: '100%' }}>
-              <Search size={18} style={{ position: 'absolute', left: 16, top: 18, color: '#666' }} />
+          <div className="mb-6">
+            <div className="relative w-full">
+              <Search size={18} className="absolute left-4 top-3.5 text-secondary-gray" />
               <input
-                className={styles.searchInput}
-                style={{ paddingLeft: 46 }}
-                placeholder="Filter by specialization (e.g. Cardiología)..."
+                className="w-full rounded-xl border border-brand-300/60 bg-white/80 py-3 pl-11 pr-4 text-sm text-brand-900 outline-none transition-all duration-200 placeholder:text-secondary-gray focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
+                placeholder={t('doctors.filterPlaceholder')}
                 value={specialization}
                 onChange={e => { setSpecialization(e.target.value); setPage(0); }}
               />
             </div>
           </div>
 
-          {error && <div className={styles.errorBanner}>{error}</div>}
+          {error && <div className="mb-4 rounded-xl border border-[#c53d3d]/35 bg-[#c53d3d]/10 px-4 py-3 text-sm text-[#8d2222]">{error}</div>}
 
           {loading ? (
-            <div className={styles.loading}><div className={styles.spinner} /><p>Loading specialists...</p></div>
+            <div className="rounded-2xl border border-brand-300/60 bg-white/80 px-6 py-14 text-center text-secondary-graphite">
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-brand-300/40 border-t-brand-700" />
+              <p>{t('doctors.loading')}</p>
+            </div>
           ) : doctors.length === 0 ? (
-            <div className={styles.empty}>
-              <Contact size={48} style={{ color: '#666', marginBottom: 16 }} />
-              <p>No doctors found. Try adjusting your search.</p>
+            <div className="rounded-2xl border border-dashed border-brand-300/70 bg-white/75 px-6 py-16 text-center text-secondary-graphite">
+              <Contact size={44} className="mx-auto mb-3 text-secondary-gray" />
+              <p>{t('doctors.empty')}</p>
             </div>
           ) : (
             <>
-              <div className={styles.docGrid}>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 {doctors.map(doc => (
-                  <div key={doc.id} className={styles.docCard}>
-                    <div className={styles.docAvatar} style={{display:'flex', alignItems:'center', justifyContent:'center', background:'transparent'}}>
+                  <div key={doc.id} className="rounded-2xl border border-brand-300/60 bg-white/80 p-6 text-center shadow-soft transition-all duration-200 hover:-translate-y-1 hover:shadow-glass">
+                    <div className="mb-4 flex h-14 items-center justify-center">
                       {getSpecialtyIcon(doc.specialization)}
                     </div>
-                    <div className={styles.docName}>{doc.name}</div>
-                    <div className={styles.docSpec}>{doc.specialization}</div>
-                    {doc.location?.city && <div className={styles.docCity} style={{display:'flex', alignItems:'center', gap:4, justifyContent:'center'}}>
-                      <MapPin size={14}/> {doc.location.city}
-                    </div>}
-                    <div className={styles.docRating} style={{display:'flex', alignItems:'center', gap:8, justifyContent:'center'}}>
-                       ★ {doc.averageRating?.toFixed(1) ?? 'New'} · {doc.reviewCount} reviews
-                      {doc.isVerified && <span className={styles.verified} style={{display:'flex', alignItems:'center', gap:4}}><CheckCircle size={12}/> Verified</span>}
+                    <div className="mb-1 text-lg font-bold text-brand-900">{doc.name}</div>
+                    <div className="mb-3 text-sm font-semibold text-brand-700">{doc.specialization}</div>
+                    {doc.location?.city && (
+                      <div className="mb-2 flex items-center justify-center gap-1 text-xs text-secondary-graphite">
+                        <MapPin size={13} /> {doc.location.city}
+                      </div>
+                    )}
+                    <div className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold text-secondary-amber">
+                      <span>★ {doc.averageRating?.toFixed(1) ?? t('doctors.new')} · {doc.reviewCount} {t('doctors.reviews')}</span>
+                      {doc.isVerified && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#2f8e4e]/30 bg-[#2f8e4e]/10 px-2 py-0.5 text-xs text-[#236a3a]">
+                          <CheckCircle size={11} /> {t('doctors.verified')}
+                        </span>
+                      )}
                     </div>
-                    <div className={styles.docCare} style={{display:'flex', alignItems:'center', gap:6, justifyContent:'center'}}>
-                      {doc.careType === 'PRESENTIAL' ? <><Building2 size={16}/> In-person</> : doc.careType === 'VIRTUAL' ? <><Monitor size={16}/> Virtual</> : '🔄 Both'}
+                    <div className="mb-4 flex items-center justify-center gap-1.5 text-sm text-secondary-graphite">
+                      {doc.careType === 'IN_PERSON' || doc.careType === 'PRESENTIAL'
+                        ? <><Building2 size={15} /> {t('common.careType.IN_PERSON')}</>
+                        : doc.careType === 'VIRTUAL'
+                          ? <><Monitor size={15} /> {t('common.careType.VIRTUAL')}</>
+                          : t('common.careType.HYBRID')}
                     </div>
                     <Button full onClick={() => router.push(`/book?doctorId=${doc.userId}&doctorName=${encodeURIComponent(doc.name)}`)}>
-                      Book Appointment
+                      {t('doctors.book')}
                     </Button>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
-                <div className={styles.pagination}>
-                  <Button variant="ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Prev</Button>
-                  <span className={styles.pageInfo}>Page {page + 1} / {totalPages}</span>
-                  <Button variant="ghost" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next →</Button>
+                <div className="mt-8 flex items-center justify-center gap-4">
+                  <Button variant="ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{t('doctors.prev')}</Button>
+                  <span className="text-sm text-secondary-graphite">{t('doctors.page', { current: page + 1, total: totalPages })}</span>
+                  <Button variant="ghost" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>{t('doctors.next')}</Button>
                 </div>
               )}
             </>

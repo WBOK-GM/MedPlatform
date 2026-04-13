@@ -1,10 +1,10 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar/Navbar';
-import styles from '../../styles/Pages.module.css';
 import { appointmentApi, authApi } from '../../lib/api';
 import { ClipboardList, Calendar, Clock, Building2, Monitor, User } from 'lucide-react';
+import { useI18n } from '../../lib/i18n';
 
 interface TimeBlock {
   id: string;
@@ -24,36 +24,48 @@ interface Appointment {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  CONFIRMED: 'confirmed', SCHEDULED: 'confirmed',
-  CANCELLED: 'cancelled', COMPLETED: 'confirmed',
+  CONFIRMED: 'bg-[#2f8e4e]/10 text-[#236a3a] border-[#2f8e4e]/25',
+  SCHEDULED: 'bg-[#2f8e4e]/10 text-[#236a3a] border-[#2f8e4e]/25',
+  CANCELLED: 'bg-[#c53d3d]/10 text-[#8d2222] border-[#c53d3d]/25',
+  COMPLETED: 'bg-brand-300/30 text-brand-800 border-brand-300/50',
 };
 
-function fmtTime(t?: string) { return t ? t.slice(0, 5) : '—'; }
-function fmtDate(d?: string) {
-  if (!d) return '—';
+function fmtTime(t?: string) { return t ? t.slice(0, 5) : '-'; }
+function fmtDate(d?: string, locale = 'en-US') {
+  if (!d) return '-';
   const iso = d.includes('T') ? d : d + 'T00:00:00';
-  return new Date(iso).toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export default function DoctorHistory() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientNames, setPatientNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'>('ALL');
-
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) { router.replace('/login'); return; }
-    if (user?.role !== 'DOCTOR') { router.replace('/dashboard'); return; }
-    fetchHistory();
+    const token = localStorage.getItem('token');
+    const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+    setCurrentUser(storedUser);
+
+    if (!token) { router.replace('/login'); return; }
+    if (storedUser?.role !== 'DOCTOR') { router.replace('/dashboard'); return; }
+    fetchHistory(storedUser?.id);
   }, []);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (doctorId?: string) => {
     setLoading(true);
     try {
-      const { data } = await appointmentApi.get<Appointment[]>(`/doctors/${user.id}/appointments`);
+      if (!doctorId) {
+        setAppointments([]);
+        return;
+      }
+
+      const { data } = await appointmentApi.get<Appointment[]>(`/doctors/${doctorId}/appointments`);
       setAppointments(data);
       const ids = [...new Set(data.map(a => a.patient_id))];
       const nameMap: Record<string, string> = {};
@@ -84,83 +96,82 @@ export default function DoctorHistory() {
 
   return (
     <>
-      <Head><title>Appointment History — MedPlatform</title></Head>
-      <div className={styles.layout}>
+      <Head><title>{t('doctorHistory.title')} - Encuentra a tu medico</title></Head>
+      <div className="flex min-h-screen flex-col">
         <Navbar />
-        <main className={styles.main}>
-          <div className={styles.welcome}>
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ClipboardList size={26} /> Appointment History
+        <main className="mx-auto w-full max-w-7xl flex-1 animate-fade-up px-6 py-9 sm:px-8">
+          <div className="mb-7">
+            <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-[-0.03em] text-brand-900">
+              <ClipboardList size={26} /> {t('doctorHistory.heading')}
             </h1>
-            <p>Full record of all patient appointments</p>
+            <p className="mt-1 text-secondary-graphite">{t('doctorHistory.subtitle')}</p>
           </div>
 
-          {/* ─── Stats row ─── */}
-          <div className={styles.statsRow}>
-            <div className={styles.statCard}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLabel}>Total</span></div>
-            <div className={styles.statCard}><span className={`${styles.statNum} ${styles.statGreen}`}>{stats.confirmed}</span><span className={styles.statLabel}>Confirmed</span></div>
-            <div className={styles.statCard}><span className={`${styles.statNum} ${styles.statBlue}`}>{stats.completed}</span><span className={styles.statLabel}>Completed</span></div>
-            <div className={styles.statCard}><span className={`${styles.statNum} ${styles.statRed}`}>{stats.cancelled}</span><span className={styles.statLabel}>Cancelled</span></div>
+          <div className="mb-6 flex flex-wrap gap-3">
+            <div className="rounded-xl border border-brand-300/60 bg-white/80 px-5 py-3 text-center">
+              <span className="block text-3xl font-extrabold text-brand-900">{stats.total}</span>
+              <span className="text-xs uppercase tracking-[0.05em] text-secondary-graphite">{t('doctorHistory.total')}</span>
+            </div>
+            <div className="rounded-xl border border-brand-300/60 bg-white/80 px-5 py-3 text-center">
+              <span className="block text-3xl font-extrabold text-[#236a3a]">{stats.confirmed}</span>
+              <span className="text-xs uppercase tracking-[0.05em] text-secondary-graphite">{t('doctorHistory.confirmed')}</span>
+            </div>
+            <div className="rounded-xl border border-brand-300/60 bg-white/80 px-5 py-3 text-center">
+              <span className="block text-3xl font-extrabold text-brand-800">{stats.completed}</span>
+              <span className="text-xs uppercase tracking-[0.05em] text-secondary-graphite">{t('doctorHistory.completed')}</span>
+            </div>
+            <div className="rounded-xl border border-brand-300/60 bg-white/80 px-5 py-3 text-center">
+              <span className="block text-3xl font-extrabold text-[#8d2222]">{stats.cancelled}</span>
+              <span className="text-xs uppercase tracking-[0.05em] text-secondary-graphite">{t('doctorHistory.cancelled')}</span>
+            </div>
           </div>
 
-          {/* ─── Filter tabs ─── */}
-          <div className={styles.filterTabs}>
+          <div className="mb-5 flex flex-wrap gap-2">
             {(['ALL', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const).map(f => (
               <button
                 key={f}
-                className={`${styles.filterTab} ${filter === f ? styles.filterTabActive : ''}`}
+                className={`rounded-full border px-4 py-1.5 text-sm transition-all duration-200 ${filter === f ? 'border-brand-700 bg-brand-700/10 font-semibold text-brand-800' : 'border-brand-300/70 text-secondary-graphite hover:border-brand-700/55 hover:text-brand-900'}`}
                 onClick={() => setFilter(f)}
               >
-                {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+                {t(`common.status.${f}`)}
               </button>
             ))}
           </div>
 
-          {/* ─── List ─── */}
           {loading ? (
-            <div className={styles.loading}><div className={styles.spinner} /><p>Loading history...</p></div>
+            <div className="rounded-2xl border border-brand-300/60 bg-white/80 px-6 py-14 text-center text-secondary-graphite">
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-brand-300/40 border-t-brand-700" />
+              <p>{t('doctorHistory.loading')}</p>
+            </div>
           ) : filtered.length === 0 ? (
-            <div className={styles.empty}>
-              <Calendar size={40} style={{ color: '#555', marginBottom: 12 }} />
-              <p>No appointments in this category.</p>
+            <div className="rounded-2xl border border-dashed border-brand-300/70 bg-white/75 px-6 py-16 text-center text-secondary-graphite">
+              <Calendar size={40} className="mx-auto mb-3 text-secondary-gray" />
+              <p>{t('doctorHistory.empty')}</p>
             </div>
           ) : (
-            <div className={styles.historyList}>
+            <div className="flex flex-col gap-3">
               {filtered.map(apt => (
-                <div key={apt.id} className={styles.historyRow}>
-                  {/* Date & Time */}
-                  <div className={styles.historyDate}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Calendar size={13} />
-                      {apt.time_block ? fmtDate(apt.time_block.schedule_date) : fmtDate(apt.created_at)}
-                    </span>
+                <div key={apt.id} className="grid grid-cols-1 items-center gap-3 rounded-xl border border-brand-300/60 bg-white/80 p-4 md:grid-cols-[minmax(180px,_auto)_minmax(180px,_auto)_140px_1fr_auto] md:gap-4">
+                  <div className="flex flex-col gap-1 text-sm">
+                    <span className="flex items-center gap-1.5 text-brand-900"><Calendar size={13} />{apt.time_block ? fmtDate(apt.time_block.schedule_date, locale) : fmtDate(apt.created_at, locale)}</span>
                     {apt.time_block && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--primary-light)', fontWeight: 700 }}>
-                        <Clock size={13} />
-                        {fmtTime(apt.time_block.start_time)} – {fmtTime(apt.time_block.end_time)}
-                      </span>
+                      <span className="flex items-center gap-1.5 font-bold text-brand-700"><Clock size={13} />{fmtTime(apt.time_block.start_time)} - {fmtTime(apt.time_block.end_time)}</span>
                     )}
                   </div>
 
-                  {/* Patient */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <User size={14} style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: '0.88rem' }}>{patientNames[apt.patient_id] || apt.patient_id.slice(0, 8)}</span>
+                  <div className="flex items-center gap-1.5 text-sm text-secondary-graphite">
+                    <User size={14} />
+                    <span>{patientNames[apt.patient_id] || apt.patient_id.slice(0, 8)}</span>
                   </div>
 
-                  {/* Care type */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    {apt.care_type === 'IN_PERSON' ? <><Building2 size={13}/> In-person</> : <><Monitor size={13}/> Virtual</>}
+                  <div className="flex items-center gap-1.5 text-sm text-secondary-graphite">
+                    {apt.care_type === 'IN_PERSON' ? <><Building2 size={13} /> {t('common.careType.IN_PERSON')}</> : <><Monitor size={13} /> {t('common.careType.VIRTUAL')}</>}
                   </div>
 
-                  {/* Notes */}
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', flex: 1 }}>
-                    {apt.notes || '—'}
-                  </div>
+                  <div className="text-sm text-secondary-graphite">{apt.notes || '-'}</div>
 
-                  {/* Status */}
-                  <span className={`${styles.badge} ${styles[STATUS_STYLES[apt.status] || 'pending']}`}>
-                    {apt.status}
+                  <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLES[apt.status] || 'bg-secondary-gray/10 text-secondary-graphite border-secondary-gray/35'}`}>
+                    {t(`common.status.${apt.status}`)}
                   </span>
                 </div>
               ))}

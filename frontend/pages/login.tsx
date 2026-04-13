@@ -1,14 +1,15 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { authApi } from '../lib/api';
 import Button from '../components/Button/Button';
 import Input from '../components/Input/Input';
-import styles from '../styles/Auth.module.css';
 import { Lock } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
 
 export default function Login() {
+  const { t } = useI18n();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,14 +26,14 @@ export default function Login() {
       const { data } = await authApi.post('/auth/login', form);
       localStorage.setItem('token', data.token || data.access_token || data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user || { email: form.email }));
-      
+
       if (data.user?.role === 'DOCTOR') {
         router.push('/doctor/dashboard');
       } else {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+      setError(err.response?.data?.message || t('login.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -40,27 +41,28 @@ export default function Login() {
 
   return (
     <>
-      <Head><title>Login — MedPlatform</title></Head>
-      <div className={styles.page}>
-        <div className={styles.blob} />
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.icon}>
-            <Lock size={32} />
+      <Head><title>{t('login.title')} - Encuentra a tu medico</title></Head>
+      <div className="relative flex min-h-screen items-center justify-center px-6 py-10">
+        <div className="pointer-events-none fixed -left-20 -top-20 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(115,53,139,0.18),transparent_72%)]" />
+
+        <form className="glass-panel w-full max-w-md animate-fade-up p-10" onSubmit={handleSubmit}>
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-800 to-brand-700 text-white shadow-[0_8px_20px_rgba(115,53,139,0.28)]">
+            <Lock size={30} />
           </div>
-          <h1 className={styles.title}>Welcome Back</h1>
-          <p className={styles.subtitle}>Sign in to your account to continue</p>
+          <h1 className="mb-1 text-center text-3xl font-extrabold tracking-[-0.02em] text-brand-900">{t('login.heading')}</h1>
+          <p className="mb-8 text-center text-sm text-secondary-graphite">{t('login.subheading')}</p>
 
-          <div className={styles.fields}>
-            <Input label="Email" name="email" type="email" value={form.email} onChange={onChange} placeholder="your@email.com" required />
-            <Input label="Password" name="password" type="password" value={form.password} onChange={onChange} placeholder="••••••••" required />
+          <div className="mb-6 flex flex-col gap-4">
+            <Input label={t('login.email')} name="email" type="email" value={form.email} onChange={onChange} placeholder={t('login.emailPlaceholder')} required />
+            <Input label={t('login.password')} name="password" type="password" value={form.password} onChange={onChange} placeholder="••••••••" required />
           </div>
 
-          <Button type="submit" full disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</Button>
+          <Button type="submit" full disabled={loading}>{loading ? t('login.signingIn') : t('login.signIn')}</Button>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && <div className="mt-4 rounded-xl border border-[#c53d3d]/35 bg-[#c53d3d]/10 px-4 py-3 text-center text-sm text-[#8d2222]">{error}</div>}
 
-          <p className={styles.footer}>
-            Don't have an account? <Link href="/register">Create one →</Link>
+          <p className="mt-6 text-center text-sm text-secondary-graphite">
+            {t('login.noAccount')} <Link href="/register" className="font-semibold text-brand-700 hover:underline">{t('login.createOne')}</Link>
           </p>
         </form>
       </div>

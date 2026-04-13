@@ -1,4 +1,4 @@
-# MedPlatform — Plataforma de Citas Médicas
+# Encuentra a tu medico — Plataforma de Citas Médicas
 
 Sistema de gestión de citas médicas basado en microservicios con frontend en Next.js.
 
