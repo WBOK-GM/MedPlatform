@@ -23,7 +23,7 @@ export default function BookAppointment() {
   const [date, setDate] = useState('');
   const [slots, setSlots] = useState<TimeBlock[]>([]);
   const [selectedSlot, setSelectedSlot] = useState('');
-  const [careType, setCareType] = useState('PRESENTIAL');
+  const [careType, setCareType] = useState('IN_PERSON');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);

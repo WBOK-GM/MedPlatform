@@ -60,3 +60,14 @@ a {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
+
+/* Prevent re-triggering page enter animations on non-route re-renders (e.g. language change). */
+.animate-fade-up {
+  animation: none !important;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body.route-entering .animate-fade-up {
+  animation: fadeUp 0.45s ease both !important;
+}

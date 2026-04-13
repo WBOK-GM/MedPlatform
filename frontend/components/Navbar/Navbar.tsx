@@ -2,17 +2,32 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Building2, User } from "lucide-react";
+import { doctorApi } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
+
+interface DoctorNavbarProfile {
+  name?: string;
+  images?: Array<{ url?: string }>;
+}
 
 export default function Navbar() {
   const router = useRouter();
   const { language, setLanguage, t } = useI18n();
   const [isAuth, setIsAuth] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [doctorProfile, setDoctorProfile] = useState<DoctorNavbarProfile | null>(null);
 
   useEffect(() => {
     setIsAuth(!!localStorage.getItem("token"));
-    setUser(JSON.parse(localStorage.getItem("user") || "null"));
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    setUser(storedUser);
+
+    if (storedUser?.role === "DOCTOR" && storedUser?.id) {
+      doctorApi
+        .get<DoctorNavbarProfile>(`/doctors/user/${storedUser.id}`)
+        .then(({ data }) => setDoctorProfile(data))
+        .catch(() => setDoctorProfile(null));
+    }
   }, []);
 
   const logout = () => {
@@ -28,6 +43,10 @@ export default function Navbar() {
         ? "bg-brand-300/30 text-brand-800"
         : "text-secondary-graphite hover:bg-brand-300/20 hover:text-brand-900"
     }`;
+
+  const doctorName = doctorProfile?.name || user?.name || user?.email?.split("@")[0] || t("navbar.doctorProfile");
+  const doctorImageUrl = doctorProfile?.images?.[0]?.url;
+  const doctorInitial = String(doctorName || "D").trim().charAt(0).toUpperCase() || "D";
 
   return (
     <nav className="sticky top-0 z-[200] flex h-16 items-center justify-between border-b border-brand-300/45 bg-white/75 px-8 backdrop-blur-xl">
@@ -58,14 +77,25 @@ export default function Navbar() {
 
         {isAuth ? (
           <>
-            {user && (
-              <span className="hidden items-center gap-1 rounded-full border border-brand-300/60 bg-white/90 px-3 py-1.5 text-xs text-secondary-graphite md:flex">
-                <User size={16} /> {user.email || user.name}
-              </span>
-            )}
-
             {user?.role === "DOCTOR" ? (
               <>
+                <Link
+                  href="/doctor/profile"
+                  className={linkClasses("/doctor/profile") + " flex min-w-[180px] items-center justify-start gap-2.5"}
+                >
+                  {doctorImageUrl ? (
+                    <img
+                      src={doctorImageUrl}
+                      alt={doctorName}
+                      className="h-7 w-7 rounded-full border border-brand-300/60 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-brand-300/60 bg-brand-300/25 text-xs font-bold text-brand-900">
+                      {doctorInitial}
+                    </span>
+                  )}
+                  <span className="max-w-[140px] truncate">{doctorName}</span>
+                </Link>
                 <Link
                   href="/doctor/dashboard"
                   className={linkClasses("/doctor/dashboard")}

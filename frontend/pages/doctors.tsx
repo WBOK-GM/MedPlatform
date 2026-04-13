@@ -128,7 +128,11 @@ export default function Doctors() {
                       )}
                     </div>
                     <div className="mb-4 flex items-center justify-center gap-1.5 text-sm text-secondary-graphite">
-                      {doc.careType === 'PRESENTIAL' ? <><Building2 size={15} /> {t('common.careType.PRESENTIAL')}</> : doc.careType === 'VIRTUAL' ? <><Monitor size={15} /> {t('common.careType.VIRTUAL')}</> : t('common.careType.BOTH')}
+                      {doc.careType === 'IN_PERSON' || doc.careType === 'PRESENTIAL'
+                        ? <><Building2 size={15} /> {t('common.careType.IN_PERSON')}</>
+                        : doc.careType === 'VIRTUAL'
+                          ? <><Monitor size={15} /> {t('common.careType.VIRTUAL')}</>
+                          : t('common.careType.HYBRID')}
                     </div>
                     <Button full onClick={() => router.push(`/book?doctorId=${doc.userId}&doctorName=${encodeURIComponent(doc.name)}`)}>
                       {t('doctors.book')}
