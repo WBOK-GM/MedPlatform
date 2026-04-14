@@ -124,6 +124,18 @@ def update_appointment_status(appointment_id: str, status_update: schemas.Appoin
     db.refresh(appointment)
     return appointment
 
+@app.patch("/appointments/{appointment_id}/notes", response_model=schemas.AppointmentResponse, tags=["Appointments"])
+def update_appointment_notes(appointment_id: str, notes_update: schemas.AppointmentNotesUpdate, db: Session = Depends(get_db)):
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    appointment.notes = notes_update.notes
+
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
 @app.get("/doctors/{doctor_id}/appointments", response_model=List[schemas.AppointmentResponse], tags=["Appointments"])
 def get_doctor_appointments(doctor_id: str, db: Session = Depends(get_db)):
     return db.query(models.Appointment).filter(

@@ -37,6 +37,9 @@ class AppointmentCreate(AppointmentBase):
 class AppointmentStatusUpdate(BaseModel):
     status: AppointmentStatus
 
+class AppointmentNotesUpdate(BaseModel):
+    notes: Optional[str] = None
+
 class AppointmentResponse(AppointmentBase):
     id: str
     status: AppointmentStatus
