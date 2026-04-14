@@ -34,6 +34,9 @@ class AppointmentBase(BaseModel):
 class AppointmentCreate(AppointmentBase):
     pass
 
+class AppointmentStatusUpdate(BaseModel):
+    status: AppointmentStatus
+
 class AppointmentResponse(AppointmentBase):
     id: str
     status: AppointmentStatus

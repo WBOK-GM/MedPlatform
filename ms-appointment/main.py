@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List
+from typing import List, Optional
 from datetime import date
 import redis
 import json
@@ -110,13 +110,25 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
     
     return appointment
 
+@app.patch("/appointments/{appointment_id}/status", response_model=schemas.AppointmentResponse, tags=["Appointments"])
+def update_appointment_status(appointment_id: str, status_update: schemas.AppointmentStatusUpdate, db: Session = Depends(get_db)):
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    appointment.status = status_update.status
+    if appointment.status == models.AppointmentStatus.CANCELLED and appointment.time_block:
+        appointment.time_block.status = models.TimeBlockStatus.AVAILABLE
+
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
 @app.get("/doctors/{doctor_id}/appointments", response_model=List[schemas.AppointmentResponse], tags=["Appointments"])
 def get_doctor_appointments(doctor_id: str, db: Session = Depends(get_db)):
     return db.query(models.Appointment).filter(
         models.Appointment.doctor_id == doctor_id
     ).all()
-
-from typing import List, Optional
 
 @app.get("/appointments", response_model=List[schemas.AppointmentResponse], tags=["Appointments"])
 def list_appointments(patient_id: Optional[str] = None, doctor_id: Optional[str] = None, db: Session = Depends(get_db)):
