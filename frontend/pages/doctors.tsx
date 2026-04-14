@@ -28,6 +28,9 @@ interface Doctor {
   averageRating: number | null;
   reviewCount: number;
   isVerified: boolean;
+  images?: Array<{
+    url?: string;
+  }>;
   location?: {
     city?: string;
     latitude?: number;
@@ -40,6 +43,25 @@ interface PageResponse {
   totalPages: number;
   totalElements: number;
 }
+
+const SPECIALIZATIONS = [
+  'Cardiologia',
+  'Dermatologia',
+  'Endocrinologia',
+  'Gastroenterologia',
+  'Ginecologia',
+  'Medicina General',
+  'Neurologia',
+  'Nutricion',
+  'Oftalmologia',
+  'Oncologia',
+  'Ortopedia',
+  'Otorrinolaringologia',
+  'Pediatria',
+  'Psicologia',
+  'Psiquiatria',
+  'Urologia',
+];
 
 const getSpecialtyIcon = (spec: string) => {
   const norm = spec.toLowerCase();
@@ -160,15 +182,16 @@ export default function Doctors() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1.3fr_1fr_1fr_1fr_auto] md:items-end">
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80">{t('home.specializationLabel')}</label>
-                <div className="relative w-full">
-                  <Search size={18} className="absolute left-4 top-3.5 text-secondary-gray" />
-                  <input
-                    className="w-full rounded-xl border border-brand-300/60 bg-white/80 py-3 pl-11 pr-4 text-sm text-brand-900 outline-none transition-all duration-200 placeholder:text-secondary-gray focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
-                    placeholder={t('doctors.filterPlaceholder')}
-                    value={specialization}
-                    onChange={(e) => setSpecialization(e.target.value)}
-                  />
-                </div>
+                <select
+                  value={specialization}
+                  onChange={(e) => setSpecialization(e.target.value)}
+                  className="w-full rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
+                >
+                  <option value="">{t('home.specializationPlaceholder')}</option>
+                  {SPECIALIZATIONS.map((specializationItem) => (
+                    <option key={specializationItem} value={specializationItem}>{specializationItem}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -246,9 +269,17 @@ export default function Doctors() {
                   {doctors.map((doc) => (
                     <article key={doc.id} className="rounded-2xl border border-brand-300/60 bg-white/80 p-6 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-glass">
                       <div className="flex flex-col gap-4 md:flex-row md:items-start">
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-brand-300/60 bg-brand-300/10">
-                          {getSpecialtyIcon(doc.specialization)}
-                        </div>
+                        {doc.images?.[0]?.url ? (
+                          <img
+                            src={doc.images[0].url}
+                            alt={doc.name}
+                            className="h-16 w-16 shrink-0 rounded-2xl border border-brand-300/60 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-brand-300/60 bg-brand-300/10">
+                            {getSpecialtyIcon(doc.specialization)}
+                          </div>
+                        )}
 
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 text-xl font-bold text-brand-900">{doc.name}</div>

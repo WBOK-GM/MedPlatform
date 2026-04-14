@@ -16,6 +16,25 @@ import {
 } from '../lib/geocoding';
 import { COLOMBIA_DEPARTMENTS, getCitiesByDepartment } from '../lib/colombia-locations';
 
+const SPECIALTIES = [
+  'Cardiologia',
+  'Dermatologia',
+  'Endocrinologia',
+  'Gastroenterologia',
+  'Ginecologia',
+  'Medicina General',
+  'Neurologia',
+  'Nutricion',
+  'Oftalmologia',
+  'Oncologia',
+  'Ortopedia',
+  'Otorrinolaringologia',
+  'Pediatria',
+  'Psicologia',
+  'Psiquiatria',
+  'Urologia',
+];
+
 const LocationPickerMap = dynamic(
   () => import('../components/LocationPickerMap/LocationPickerMap'),
   { ssr: false }
@@ -246,7 +265,21 @@ export default function RegisterDoctor() {
             <Input label={t('register.confirmPassword')} name="confirmPassword" type="password" value={form.confirmPassword} onChange={onChange} placeholder={t('register.confirmPasswordPlaceholder')} required />
 
             <div className="md:col-span-2 mt-2 border-b border-brand-300/60 pb-2 text-sm font-bold text-brand-800">{t('registerDoctor.profile')}</div>
-            <Input label={t('registerDoctor.specialization')} name="specialization" value={form.specialization} onChange={onChange} placeholder={t('registerDoctor.specializationPlaceholder')} required />
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80">{t('registerDoctor.specialization')}</label>
+              <select
+                name="specialization"
+                value={form.specialization}
+                onChange={onChange}
+                required
+                className="w-full rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
+              >
+                <option value="">{t('registerDoctor.specializationPlaceholder')}</option>
+                {SPECIALTIES.map((specialty) => (
+                  <option key={specialty} value={specialty}>{specialty}</option>
+                ))}
+              </select>
+            </div>
             <Input label={t('registerDoctor.yearsExperience')} name="experienceYears" type="number" value={form.experienceYears} onChange={onChange} placeholder={t('registerDoctor.yearsExperiencePlaceholder')} required />
 
             <div className="md:col-span-2 flex flex-col gap-2">

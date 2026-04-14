@@ -7,6 +7,25 @@ import { useI18n } from '../lib/i18n';
 import { COLOMBIA_DEPARTMENTS, getCitiesByDepartment } from '../lib/colombia-locations';
 import { CheckCircle, Search, ShieldCheck, Stethoscope, UsersRound } from 'lucide-react';
 
+const SPECIALTIES = [
+  'Cardiologia',
+  'Dermatologia',
+  'Endocrinologia',
+  'Gastroenterologia',
+  'Ginecologia',
+  'Medicina General',
+  'Neurologia',
+  'Nutricion',
+  'Oftalmologia',
+  'Oncologia',
+  'Ortopedia',
+  'Otorrinolaringologia',
+  'Pediatria',
+  'Psicologia',
+  'Psiquiatria',
+  'Urologia',
+];
+
 export default function Home() {
   const router = useRouter();
   const { t } = useI18n();
@@ -56,12 +75,16 @@ export default function Home() {
               <form onSubmit={handleSearch} className="grid grid-cols-1 gap-3 rounded-2xl border border-brand-300/60 bg-white/90 p-4 md:grid-cols-[1.3fr_1fr_1fr_1fr_auto] md:items-end">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80">{t('home.specializationLabel')}</label>
-                  <input
-                    className="w-full rounded-xl border border-brand-300/60 bg-white/90 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 placeholder:text-secondary-gray focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
-                    placeholder={t('home.specializationPlaceholder')}
+                  <select
+                    className="w-full rounded-xl border border-brand-300/60 bg-white/90 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35"
                     value={specialization}
                     onChange={(e) => setSpecialization(e.target.value)}
-                  />
+                  >
+                    <option value="">{t('home.specializationPlaceholder')}</option>
+                    {SPECIALTIES.map((specialty) => (
+                      <option key={specialty} value={specialty}>{specialty}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex flex-col gap-2">
