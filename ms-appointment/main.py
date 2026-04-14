@@ -120,6 +120,9 @@ def update_appointment_status(appointment_id: str, status_update: schemas.Appoin
     if appointment.status == models.AppointmentStatus.CANCELLED and appointment.time_block:
         appointment.time_block.status = models.TimeBlockStatus.AVAILABLE
 
+    if appointment.status == models.AppointmentStatus.CONFIRMED and appointment.time_block:
+        appointment.time_block.status = models.TimeBlockStatus.OCCUPIED
+
     db.commit()
     db.refresh(appointment)
     return appointment
