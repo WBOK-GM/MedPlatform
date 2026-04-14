@@ -43,37 +43,59 @@ def blocking_redis_listener():
 
 def handle_notification(channel: str, data: dict):
     if channel == 'appointment:created':
-        patient_id = data.get('patient_id', 'N/A')
+        patient_id   = data.get('patient_id', 'N/A')
         appointment_id = data.get('appointment_id', 'N/A')
-        # Asumimos que el email viene en 'data', de lo contrario mockeamos uno
-        patient_email = data.get('patient_email', 'paciente@example.com')
-        
-        print(f"[US-026] ENVIAR EMAIL de confirmación al paciente {patient_id} para cita {appointment_id}")
-        
-        subject = f"Confirmación de cita {appointment_id}"
-        body = f"Hola paciente {patient_id},\n\nTu cita con ID {appointment_id} ha sido confirmada satisfactoriamente."
-        send_email(patient_email, subject, body)
-        
-        # Email al médico (US-027)
-        doctor_id = data.get('doctor_id', 'N/A')
-        print(f"[US-027] NOTIFICAR al médico {doctor_id} de nueva cita")
-        doctor_email = data.get('doctor_email', 'medico@example.com')
-        
-        if doctor_email:
-            send_email(
-                doctor_email,
-                f"Nueva cita agendada - {appointment_id}",
-                f"Tienes una nueva cita con ID {appointment_id} agendada por el paciente {patient_id}."
+        patient_email  = data.get('patient_email', '')
+        doctor_id      = data.get('doctor_id', 'N/A')
+        doctor_email   = data.get('doctor_email', '')
+        care_type      = data.get('type', '')
+        # Referencia corta legible (primeros 8 caracteres del UUID)
+        ref = appointment_id[:8].upper() if appointment_id != 'N/A' else 'N/A'
+
+        care_label = {'IN_PERSON': 'Presencial', 'VIRTUAL': 'Virtual', 'HYBRID': 'Híbrida'}.get(care_type, care_type)
+
+        print(f"[US-026] ENVIAR EMAIL de confirmación al paciente {patient_id} — ref #{ref}")
+
+        # --- Correo al paciente ---
+        if patient_email:
+            subject = f"Tu cita médica ha sido confirmada — Ref. #{ref}"
+            body = (
+                f"¡Tu cita ha sido confirmada!\n\n"
+                f"  • Número de referencia : #{ref}\n"
+                f"  • Tipo de atención     : {care_label}\n\n"
+                f"Recibirás recordatorios próximos a la fecha.\n\n"
+                f"Si necesitas cancelar o reprogramar, ingresa a la plataforma.\n\n"
+                f"— Equipo MedPlatform"
             )
-            
+            send_email(patient_email, subject, body)
+
+        # --- Correo al médico (US-027) ---
+        print(f"[US-027] NOTIFICAR al médico {doctor_id} de nueva cita — ref #{ref}")
+        if doctor_email:
+            subject = f"Nueva cita agendada — Ref. #{ref}"
+            body = (
+                f"Tienes una nueva cita agendada.\n\n"
+                f"  • Número de referencia : #{ref}\n"
+                f"  • Tipo de atención     : {care_label}\n\n"
+                f"Revisa tu calendario en la plataforma para ver todos los detalles.\n\n"
+                f"— Equipo MedPlatform"
+            )
+            send_email(doctor_email, subject, body)
+
     elif channel == 'appointment:cancelled':
         appointment_id = data.get('appointment_id', 'N/A')
-        patient_email = data.get('patient_email', 'paciente@example.com')
-        print(f"[US-026] ENVIAR EMAIL de cancelación para cita {appointment_id}")
-        
-        subject = f"Cancelación de cita {appointment_id}"
-        body = f"La cita con ID {appointment_id} ha sido cancelada."
-        send_email(patient_email, subject, body)
+        patient_email  = data.get('patient_email', '')
+        ref = appointment_id[:8].upper() if appointment_id != 'N/A' else 'N/A'
+        print(f"[US-026] ENVIAR EMAIL de cancelación — ref #{ref}")
+
+        if patient_email:
+            subject = f"Tu cita ha sido cancelada — Ref. #{ref}"
+            body = (
+                f"Tu cita con referencia #{ref} ha sido cancelada.\n\n"
+                f"Si tienes dudas, contáctanos a través de la plataforma.\n\n"
+                f"— Equipo MedPlatform"
+            )
+            send_email(patient_email, subject, body)
 
 
 @asynccontextmanager

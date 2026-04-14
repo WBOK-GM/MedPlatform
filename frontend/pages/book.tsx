@@ -1,9 +1,9 @@
-﻿import Head from 'next/head';
+import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar/Navbar';
 import Button from '../components/Button/Button';
-import { appointmentApi } from '../lib/api';
+import { appointmentApi, authApi } from '../lib/api';
 import { Building2, Monitor } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 
@@ -29,13 +29,21 @@ export default function BookAppointment() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [doctorEmail, setDoctorEmail] = useState('');
 
   useEffect(() => {
     if (!router.isReady) return;
     if (!localStorage.getItem('token')) {
       router.replace(`/login?returnTo=${encodeURIComponent(router.asPath)}`);
+      return;
     }
-  }, [router.isReady, router.asPath, router]);
+    // Obtener email del médico para incluirlo en la notificación
+    if (doctorId) {
+      authApi.get(`/auth/users/${doctorId}`)
+        .then(({ data }) => setDoctorEmail(data.email || ''))
+        .catch(() => setDoctorEmail(''));
+    }
+  }, [router.isReady, router.asPath, router, doctorId]);
 
   const fetchSlots = async () => {
     if (!date || !doctorId) return;
@@ -57,6 +65,7 @@ export default function BookAppointment() {
   const handleBook = async () => {
     if (!selectedSlot || !doctorId) { setError(t('book.selectSlot')); return; }
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const patientEmail = user.email || '';
     setLoading(true);
     setError('');
     try {
@@ -66,6 +75,8 @@ export default function BookAppointment() {
         time_block_id: selectedSlot,
         care_type: careType,
         notes,
+        patient_email: patientEmail,
+        doctor_email: doctorEmail,
       });
       setSuccess(t('book.booked'));
       setTimeout(() => router.push('/dashboard'), 2000);
@@ -77,6 +88,7 @@ export default function BookAppointment() {
       setLoading(false);
     }
   };
+
 
   return (
     <>

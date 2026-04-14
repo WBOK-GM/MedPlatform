@@ -67,8 +67,12 @@ def create_appointment(appointment: schemas.AppointmentCreate, db: Session = Dep
     if time_block.status != models.TimeBlockStatus.AVAILABLE:
         raise HTTPException(status_code=400, detail="TimeBlock is not available")
     
-    # 2. Crear cita
-    db_appointment = models.Appointment(**appointment.model_dump())
+    # Extraer emails ANTES de crear el modelo (no son columnas de la BD)
+    patient_email = appointment.patient_email or ""
+    doctor_email = appointment.doctor_email or ""
+
+    # 2. Crear cita (excluir campos que no existen en la tabla)
+    db_appointment = models.Appointment(**appointment.model_dump(exclude={"patient_email", "doctor_email"}))
     
     try:
         # Cambiar el estado del bloque asumiendo que db.commit lo atará
@@ -78,11 +82,14 @@ def create_appointment(appointment: schemas.AppointmentCreate, db: Session = Dep
         db.refresh(db_appointment)
         
         # Enviar evento a redis queue para el ms-notification (US-026, 027)
+        # Incluir emails para que ms-notification los use directamente
         event_data = {
             "appointment_id": db_appointment.id,
             "patient_id": db_appointment.patient_id,
             "doctor_id": db_appointment.doctor_id,
-            "type": db_appointment.care_type.value
+            "type": db_appointment.care_type.value,
+            "patient_email": patient_email,
+            "doctor_email": doctor_email,
         }
         redis_client.publish('appointment:created', json.dumps(event_data))
         
@@ -99,7 +106,11 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
     
     appointment.status = models.AppointmentStatus.CANCELLED
     if appointment.time_block:
+        # Liberar el bloque de tiempo
         appointment.time_block.status = models.TimeBlockStatus.AVAILABLE
+        # Desasociar la cita del bloque para liberar el constraint UNIQUE
+        # (sin esto, el mismo bloque no puede ser re-agendado)
+        appointment.time_block_id = None
         
     db.commit()
     db.refresh(appointment)
@@ -118,7 +129,9 @@ def update_appointment_status(appointment_id: str, status_update: schemas.Appoin
 
     appointment.status = status_update.status
     if appointment.status == models.AppointmentStatus.CANCELLED and appointment.time_block:
+        # Liberar el bloque y desasociar para que pueda ser re-agendado
         appointment.time_block.status = models.TimeBlockStatus.AVAILABLE
+        appointment.time_block_id = None
 
     if appointment.status == models.AppointmentStatus.CONFIRMED and appointment.time_block:
         appointment.time_block.status = models.TimeBlockStatus.OCCUPIED
