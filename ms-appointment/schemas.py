@@ -27,11 +27,12 @@ class TimeBlockSummary(BaseModel):
 class AppointmentBase(BaseModel):
     patient_id: str
     doctor_id: str
-    time_block_id: str
+    time_block_id: Optional[str] = None
     care_type: CareType
     notes: Optional[str] = None
 
 class AppointmentCreate(AppointmentBase):
+    time_block_id: str  # Required when creating
     patient_email: Optional[str] = None
     doctor_email: Optional[str] = None
 
