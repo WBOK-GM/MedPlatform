@@ -7,6 +7,9 @@ from datetime import date
 import redis
 import json
 import os
+import asyncio
+from contextlib import asynccontextmanager
+import py_eureka_client.eureka_client as eureka_client
 
 import models
 import schemas
@@ -17,7 +20,17 @@ redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Appointment Microservice", description="Agendamiento de Citas Médicas")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    eureka_server = os.getenv("EUREKA_SERVER", "http://ms-eureka:8761/eureka")
+    await eureka_client.init_async(
+        eureka_server=eureka_server,
+        app_name="ms-appointment",
+        instance_port=3003
+    )
+    yield
+
+app = FastAPI(title="Appointment Microservice", description="Agendamiento de Citas Médicas", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

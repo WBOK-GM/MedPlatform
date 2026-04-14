@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        - id: ms-auth
+          uri: lb://ms-auth
+          predicates:
+            - Path=/auth/**
+        - id: ms-doctor
+          uri: lb://ms-doctor
+          predicates:
+            - Path=/doctor/**
+        - id: ms-appointment
+          uri: lb://ms-appointment
+          predicates:
+            - Path=/appointment/**
+        - id: ms-notification
+          uri: lb://ms-notification
+          predicates:
+            - Path=/notification/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://ms-eureka:8761/eureka/

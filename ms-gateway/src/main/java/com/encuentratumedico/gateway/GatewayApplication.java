@@ -1,4 +1,4 @@
-package com.encuentratumedico.msdoctor;
+package com.encuentratumedico.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,8 +6,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-public class MsDoctorApplication {
+public class GatewayApplication {
     public static void main(String[] args) {
-        SpringApplication.run(MsDoctorApplication.class, args);
+        SpringApplication.run(GatewayApplication.class, args);
     }
 }
