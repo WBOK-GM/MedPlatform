@@ -145,6 +145,13 @@ def get_doctor_appointments(doctor_id: str, db: Session = Depends(get_db)):
         models.Appointment.doctor_id == doctor_id
     ).all()
 
+@app.get("/appointments/{appointment_id}", response_model=schemas.AppointmentResponse, tags=["Appointments"])
+def get_appointment_by_id(appointment_id: str, db: Session = Depends(get_db)):
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    return appointment
+
 @app.get("/appointments", response_model=List[schemas.AppointmentResponse], tags=["Appointments"])
 def list_appointments(patient_id: Optional[str] = None, doctor_id: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.Appointment)
