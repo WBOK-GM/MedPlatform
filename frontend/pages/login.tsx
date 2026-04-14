@@ -27,13 +27,6 @@ export default function Login() {
       localStorage.setItem('token', data.token || data.access_token || data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user || { email: form.email }));
 
-      const returnTo = typeof router.query.returnTo === 'string' ? router.query.returnTo : '';
-      const safeReturnTo = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '';
-      if (safeReturnTo) {
-        router.push(safeReturnTo);
-        return;
-      }
-
       if (data.user?.role === 'DOCTOR') {
         router.push('/doctor/dashboard');
       } else {

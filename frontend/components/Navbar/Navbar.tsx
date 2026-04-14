@@ -33,7 +33,7 @@ export default function Navbar() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/");
+    router.push("/login");
   };
 
   const isActive = (path: string) => router.pathname === path;

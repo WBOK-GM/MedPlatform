@@ -31,11 +31,8 @@ export default function BookAppointment() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!router.isReady) return;
-    if (!localStorage.getItem('token')) {
-      router.replace(`/login?returnTo=${encodeURIComponent(router.asPath)}`);
-    }
-  }, [router.isReady, router.asPath, router]);
+    if (!localStorage.getItem('token')) { router.replace('/login'); return; }
+  }, []);
 
   const fetchSlots = async () => {
     if (!date || !doctorId) return;
@@ -133,17 +130,13 @@ export default function BookAppointment() {
             <div className="flex flex-col gap-3">
               <div className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700">{t('book.step3')}</div>
               <div className="flex flex-wrap gap-2.5">
-                {['IN_PERSON', 'VIRTUAL', 'HYBRID'].map(ct => (
+                {['IN_PERSON', 'VIRTUAL'].map(ct => (
                   <button
                     key={ct}
                     className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 ${careType === ct ? 'border-secondary-amber bg-secondary-sand/35 text-brand-900' : 'border-brand-300/70 bg-white/70 text-secondary-graphite hover:border-secondary-amber/70 hover:text-brand-900'}`}
                     onClick={() => setCareType(ct)}
                   >
-                    {ct === 'IN_PERSON'
-                      ? <><Building2 size={18} /> {t('common.careType.IN_PERSON')}</>
-                      : ct === 'VIRTUAL'
-                        ? <><Monitor size={18} /> {t('common.careType.VIRTUAL')}</>
-                        : t('common.careType.HYBRID')}
+                    {ct === 'IN_PERSON' ? <><Building2 size={18} /> {t('common.careType.IN_PERSON')}</> : <><Monitor size={18} /> {t('common.careType.VIRTUAL')}</>}
                   </button>
                 ))}
               </div>
