@@ -155,6 +155,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - EUREKA_SERVER=http://ms-eureka:8761/eureka
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     depends_on:
       redis:
         condition: service_started
