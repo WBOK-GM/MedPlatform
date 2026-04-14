@@ -32,7 +32,8 @@ class AppointmentBase(BaseModel):
     notes: Optional[str] = None
 
 class AppointmentCreate(AppointmentBase):
-    pass
+    patient_email: Optional[str] = None
+    doctor_email: Optional[str] = None
 
 class AppointmentResponse(AppointmentBase):
     id: str
