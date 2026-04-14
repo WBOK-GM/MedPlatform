@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Image as ImageIcon, UserRoundPen } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
@@ -7,6 +7,7 @@ import Button from '../../components/Button/Button';
 import Input from '../../components/Input/Input';
 import { doctorApi } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
+import { COLOMBIA_DEPARTMENTS, getCitiesByDepartment } from '../../lib/colombia-locations';
 
 interface DoctorImage {
   url?: string;
@@ -39,6 +40,7 @@ interface EditForm {
   experienceYears: string;
   professionalDescription: string;
   careType: 'IN_PERSON' | 'VIRTUAL' | 'HYBRID';
+  department: string;
   city: string;
   address: string;
   latitude: string;
@@ -46,14 +48,26 @@ interface EditForm {
   imageUrl: string;
 }
 
+function findDepartmentByCity(city?: string): string {
+  if (!city) return '';
+  const normalized = city.trim().toLowerCase();
+  const match = COLOMBIA_DEPARTMENTS.find((department) =>
+    getCitiesByDepartment(department).some((departmentCity) => departmentCity.toLowerCase() === normalized)
+  );
+
+  return match || '';
+}
+
 function buildForm(profile: DoctorProfile): EditForm {
+  const city = profile.location?.city || '';
   return {
     name: profile.name || '',
     specialization: profile.specialization || '',
     experienceYears: String(profile.experienceYears ?? 0),
     professionalDescription: profile.professionalDescription || '',
     careType: profile.careType || 'VIRTUAL',
-    city: profile.location?.city || '',
+    department: findDepartmentByCity(city),
+    city,
     address: profile.location?.address || '',
     latitude: profile.location?.latitude != null ? String(profile.location.latitude) : '',
     longitude: profile.location?.longitude != null ? String(profile.location.longitude) : '',
@@ -72,6 +86,18 @@ export default function DoctorProfilePage() {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const citiesForDepartment = useMemo(() => {
+    if (!form?.department) return [];
+    return getCitiesByDepartment(form.department);
+  }, [form?.department]);
+
+  const selectableCities = useMemo(() => {
+    if (!form) return [];
+    if (form.careType === 'VIRTUAL') return ['Virtual'];
+    if (!form.city || citiesForDepartment.includes(form.city)) return citiesForDepartment;
+    return [form.city, ...citiesForDepartment];
+  }, [citiesForDepartment, form]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -125,13 +151,31 @@ export default function DoctorProfilePage() {
         return {
           ...current,
           careType: nextCareType,
+          department: '',
           city: 'Virtual',
           address: t('registerDoctor.virtualAddressDefault'),
           latitude: '',
           longitude: '',
         };
       }
-      return { ...current, careType: nextCareType };
+      return {
+        ...current,
+        careType: nextCareType,
+        city: current.city === 'Virtual' ? '' : current.city,
+      };
+    });
+  };
+
+  const onDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!form) return;
+    const nextDepartment = e.target.value;
+    setForm((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        department: nextDepartment,
+        city: '',
+      };
     });
   };
 
@@ -150,9 +194,18 @@ export default function DoctorProfilePage() {
     setError('');
     setSuccess('');
 
+    if (form.careType !== 'VIRTUAL' && (!form.department || !form.city || !form.address.trim())) {
+      setError(t('registerDoctor.locationRequiredForInPerson'));
+      setSaving(false);
+      return;
+    }
+
     const latitude = form.latitude ? Number(form.latitude) : null;
     const longitude = form.longitude ? Number(form.longitude) : null;
     const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const composedAddress = form.careType === 'VIRTUAL'
+      ? t('registerDoctor.virtualAddressDefault')
+      : [form.address.trim(), form.city.trim(), form.department.trim()].filter(Boolean).join(', ');
 
     try {
       await doctorApi.put(`/doctors/${doctor.id}`, {
@@ -163,8 +216,8 @@ export default function DoctorProfilePage() {
         professionalDescription: form.professionalDescription,
         careType: form.careType,
         location: {
-          city: form.city,
-          address: form.address,
+          city: form.careType === 'VIRTUAL' ? 'Virtual' : form.city,
+          address: composedAddress,
           latitude: hasCoords ? latitude : null,
           longitude: hasCoords ? longitude : null,
           ...(hasCoords ? { coordinates: { type: 'Point', coordinates: [longitude, latitude] } } : {})
@@ -294,8 +347,37 @@ export default function DoctorProfilePage() {
                   />
                 </div>
 
-                <Input label={t('doctorProfile.city')} name="city" value={form.city} onChange={onInputChange} required disabled={!editing} />
-                <Input label={t('doctorProfile.address')} name="address" value={form.address} onChange={onInputChange} required disabled={!editing} />
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80">{t('registerDoctor.department')}</label>
+                  <select
+                    value={form.department}
+                    onChange={onDepartmentChange}
+                    disabled={!editing || form.careType === 'VIRTUAL'}
+                    className="w-full rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <option value="">{t('registerDoctor.departmentPlaceholder')}</option>
+                    {COLOMBIA_DEPARTMENTS.map((department) => (
+                      <option key={department} value={department}>{department}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-graphite/80">{t('doctorProfile.city')}</label>
+                  <select
+                    value={form.city}
+                    onChange={(e) => setForm((current) => current ? { ...current, city: e.target.value } : current)}
+                    disabled={!editing || (form.careType !== 'VIRTUAL' && !form.department)}
+                    className="w-full rounded-xl border border-brand-300/60 bg-white/80 px-4 py-3 text-sm text-brand-900 outline-none transition-all duration-200 focus:border-brand-700 focus:ring-4 focus:ring-brand-300/35 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {form.careType !== 'VIRTUAL' && <option value="">{t('registerDoctor.cityPlaceholder')}</option>}
+                    {selectableCities.map((cityOption) => (
+                      <option key={cityOption} value={cityOption}>{cityOption}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <Input label={t('doctorProfile.address')} name="address" value={form.address} onChange={onInputChange} required disabled={!editing || form.careType === 'VIRTUAL'} />
                 <Input label={t('doctorProfile.latitude')} name="latitude" value={form.latitude} onChange={onInputChange} disabled={!editing} />
                 <Input label={t('doctorProfile.longitude')} name="longitude" value={form.longitude} onChange={onInputChange} disabled={!editing} />
 
