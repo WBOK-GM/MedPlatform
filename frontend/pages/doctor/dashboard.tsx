@@ -21,6 +21,7 @@ interface TimeBlock {
 
 interface Appointment {
   id: string;
+  appointment_id?: string;
   doctor_id: string;
   patient_id: string;
   time_block_id?: string;
@@ -99,6 +100,11 @@ function overlaps(startA: number, endA: number, startB: number, endB: number) {
   return startA < endB && startB < endA;
 }
 
+function getAppointmentId(appointment: Appointment | null | undefined) {
+  if (!appointment) return '';
+  return appointment.id || appointment.appointment_id || '';
+}
+
 export default function DoctorDashboard() {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -150,14 +156,21 @@ export default function DoctorDashboard() {
       }
 
       const { data } = await appointmentApi.get<Appointment[]>(`/doctors/${doctorId}/appointments`);
-      setAppointments(data);
+      const normalizedAppointments = data
+        .map((appointment) => ({
+          ...appointment,
+          id: appointment.id || appointment.appointment_id || '',
+        }))
+        .filter((appointment) => Boolean(appointment.id));
+
+      setAppointments(normalizedAppointments);
       const initialNotes: Record<string, string> = {};
-      data.forEach((appointment) => {
+      normalizedAppointments.forEach((appointment) => {
         initialNotes[appointment.id] = appointment.notes || '';
       });
       setPostVisitNotes(initialNotes);
 
-      const ids = [...new Set(data.map(a => a.patient_id))];
+      const ids = [...new Set(normalizedAppointments.map(a => a.patient_id))];
       const nameMap: Record<string, string> = {};
       await Promise.all(ids.map(async (pid) => {
         try {
@@ -201,6 +214,13 @@ export default function DoctorDashboard() {
   };
 
   const openAppointmentDetail = async (appointmentId: string) => {
+    if (!appointmentId) {
+      setAppointmentDetailError(t('doctorDashboard.detailInvalidId'));
+      setAppointmentDetailLoading(false);
+      setSelectedAppointment(null);
+      return;
+    }
+
     setAppointmentDetailError('');
     setAppointmentDetailLoading(true);
     setSelectedAppointment(null);
@@ -441,7 +461,7 @@ export default function DoctorDashboard() {
                     <div
                       key={apt.id}
                       className="relative overflow-hidden rounded-2xl border border-brand-300/60 bg-white/80 p-6 shadow-soft transition-all duration-200 hover:-translate-y-1 hover:shadow-glass cursor-pointer"
-                      onClick={() => openAppointmentDetail(apt.id)}
+                      onClick={() => openAppointmentDetail(getAppointmentId(apt))}
                     >
                       <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-800 to-brand-700" />
                       {(() => {
