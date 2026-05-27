@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './users/entities/user.entity';
-import { Credential } from './users/entities/credential.entity';
 import { AuthModule } from './auth/auth.module';
+import { CredentialOrmEntity } from './auth/infrastructure/persistence/entities/credential.orm-entity';
+import { UserOrmEntity } from './auth/infrastructure/persistence/entities/user.orm-entity';
 
 @Module({
   imports: [
@@ -18,8 +18,8 @@ import { AuthModule } from './auth/auth.module';
         username: config.get<string>('DB_USER', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'users_db'),
-        entities: [User, Credential],
-        synchronize: true, // ONLY FOR DEV/MVP
+        entities: [UserOrmEntity, CredentialOrmEntity],
+        synchronize: true,
       }),
     }),
     AuthModule,
