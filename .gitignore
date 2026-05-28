@@ -69,3 +69,5 @@ logs/
 **/.npm/
 **/.cache/
 **/pip-wheel-metadata/
+
+.claude
