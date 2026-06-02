@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medplatform-config
+  namespace: medplatform
+data:
+  # URLs internas K8s (mismo namespace = nombre corto suficiente)
+  MS_AUTH_URL: "http://ms-auth:3001"
+  MS_APPOINTMENT_URL: "http://ms-appointment:3003"
+  MS_DOCTOR_URL: "http://ms-doctor:3002"
+  # Redis y DBs están en medplatform-data, se accede por FQDN
+  REDIS_URL: "redis://redis.medplatform-data.svc.cluster.local:6379/0"
+  # Postgres para ms-auth
+  DB_HOST: "postgres-users.medplatform-data.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_USER: "postgres"
+  DB_NAME: "users_db"
+  # Postgres para ms-appointment
+  DATABASE_URL: "postgresql://postgres:postgrespassword@postgres-appointments.medplatform-data.svc.cluster.local:5432/appointments_db"
+  # MongoDB para ms-doctor
+  MONGODB_URI: "mongodb://root:rootpassword@mongodb.medplatform-data.svc.cluster.local:27017/doctors_db?authSource=admin"

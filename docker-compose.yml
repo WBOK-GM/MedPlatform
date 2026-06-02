@@ -29,11 +29,16 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: appointments_db
     ports:
-      - "5433:5432" # Expuesto en 5433 en host
+      - "5433:5432"
     volumes:
       - pg_appointments_data:/var/lib/postgresql/data
     networks:
       - medical_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d appointments_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   mongodb:
     image: mongo:7
@@ -59,35 +64,10 @@ services:
       - medical_network
 
   # ==========================================
-  # MICROSERVICES
+  # MICROSERVICES (sin Eureka ni ms-gateway)
+  # Los micros se comunican por nombre de contenedor via Docker network.
+  # Para Kubernetes usar k8s/ — este compose es solo para desarrollo local.
   # ==========================================
-
-  ms-eureka:
-    build: ./ms-eureka
-    container_name: ms_eureka
-    ports:
-      - "8761:8761"
-    networks:
-      - medical_network
-    healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/eureka/apps || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  ms-gateway:
-    build: ./ms-gateway
-    container_name: ms_gateway
-    ports:
-      - "8080:8080"
-    environment:
-      - EUREKA_URL=http://ms-eureka:8761/eureka/
-    depends_on:
-      ms-eureka:
-        condition: service_healthy
-    networks:
-      - medical_network
 
   ms-auth:
     build: ./ms-auth
@@ -100,12 +80,8 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgrespassword
       - DB_NAME=users_db
-      - EUREKA_HOST=ms-eureka
-      - EUREKA_PORT=8761
     depends_on:
       postgres-users:
-        condition: service_healthy
-      ms-eureka:
         condition: service_healthy
     networks:
       - medical_network
@@ -119,12 +95,9 @@ services:
       - MONGODB_URI=mongodb://root:rootpassword@mongodb:27017/doctors_db?authSource=admin
       - MS_AUTH_URL=http://ms-auth:3001
       - MS_APPOINTMENT_URL=http://ms-appointment:3003
-      - EUREKA_URL=http://ms-eureka:8761/eureka/
     depends_on:
       mongodb:
         condition: service_started
-      ms-eureka:
-        condition: service_healthy
     networks:
       - medical_network
 
@@ -136,14 +109,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgrespassword@postgres-appointments:5432/appointments_db
       - REDIS_URL=redis://redis:6379/0
-      - EUREKA_SERVER=http://ms-eureka:8761/eureka
     depends_on:
       postgres-appointments:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_started
-      ms-eureka:
-        condition: service_healthy
     networks:
       - medical_network
 
@@ -154,13 +124,10 @@ services:
       - "3004:3004"
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - EUREKA_SERVER=http://ms-eureka:8761/eureka
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     depends_on:
       redis:
         condition: service_started
-      ms-eureka:
-        condition: service_healthy
     networks:
       - medical_network
 
@@ -170,13 +137,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # These point to localhost:* because browser requests come from the host machine
-      # (the microservice ports are already exposed to the host via docker-compose ports mapping)
-      - NEXT_PUBLIC_AUTH_URL=http://localhost:8080/auth
-      - NEXT_PUBLIC_DOCTOR_URL=http://localhost:8080/doctor
-      - NEXT_PUBLIC_APPOINTMENT_URL=http://localhost:8080/appointment
+      # Para desarrollo local (compose) los micros están expuestos directamente al host
+      - NEXT_PUBLIC_AUTH_URL=http://localhost:3001
+      - NEXT_PUBLIC_DOCTOR_URL=http://localhost:3002
+      - NEXT_PUBLIC_APPOINTMENT_URL=http://localhost:3003
     depends_on:
-      - ms-gateway
+      - ms-auth
+      - ms-doctor
+      - ms-appointment
     networks:
       - medical_network
 
@@ -189,5 +157,3 @@ volumes:
   pg_appointments_data:
   mongo_data:
   redis_data:
-
-

@@ -4,7 +4,6 @@ import json
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-import py_eureka_client.eureka_client as eureka_client
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
  
@@ -100,15 +99,8 @@ def handle_notification(channel: str, data: dict):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Nuevo mecanismo de startup/shutdown de FastAPI (sustituye @app.on_event).
-    El listener de Redis corre en un thread pool para no bloquear el event loop.
-    """
-    eureka_server = os.getenv("EUREKA_SERVER", "http://ms-eureka:8761/eureka")
-    await eureka_client.init_async(eureka_server=eureka_server, app_name="ms-notification", instance_port=3004)
     asyncio.get_event_loop().run_in_executor(None, blocking_redis_listener)
     yield
-    # Cleanup si fuera necesario
 
 
 app = FastAPI(

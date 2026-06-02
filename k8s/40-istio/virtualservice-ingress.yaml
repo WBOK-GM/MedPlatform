@@ -1,0 +1,77 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: medplatform-ingress
+  namespace: medplatform
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - medplatform-gw
+  http:
+  # ---------- ms-auth ----------
+  # Frontend: AUTH_URL=http://localhost → axios appends /auth/register → path /auth/register → ms-auth ✓
+  # Sin rewrite: Istio pasa el path intacto. NestJS @Controller('auth') lo maneja correctamente.
+  - match:
+    - uri:
+        prefix: /auth
+    route:
+    - destination:
+        host: ms-auth
+        port:
+          number: 3001
+    timeout: 10s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+      retryOn: 5xx,reset,connect-failure
+
+  # ---------- ms-doctor ----------
+  # prefix /doctor/ (con slash) → remanente es "doctors?..." (sin slash) → prepend "/" → "/doctors?..." ✓
+  # Sin trailing slash causaría: strip /doctor de /doctor/doctors → /doctors → prepend / → //doctors (doble slash)
+  - match:
+    - uri:
+        prefix: /doctor/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: ms-doctor
+        port:
+          number: 3002
+    timeout: 10s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+      retryOn: 5xx,reset,connect-failure
+
+  # ---------- ms-appointment ----------
+  # prefix /appointment/ (con slash) → remanente es "appointments?..." → prepend "/" → "/appointments?..." ✓
+  - match:
+    - uri:
+        prefix: /appointment/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: ms-appointment
+        port:
+          number: 3003
+    timeout: 15s
+    retries:
+      attempts: 3
+      perTryTimeout: 4s
+      retryOn: 5xx,reset,connect-failure
+
+  # ---------- ms-notification ----------
+  - match:
+    - uri:
+        prefix: /notification/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: ms-notification
+        port:
+          number: 3004
+    timeout: 5s

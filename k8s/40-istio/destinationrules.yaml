@@ -1,0 +1,96 @@
+# DestinationRule por cada microservicio
+# - tls.mode ISTIO_MUTUAL activa mTLS con el sidecar del destino
+# - outlierDetection = circuit breaker: eyecta pod si supera N errores 5xx consecutivos
+# - connectionPool limita concurrencia por pod
+
+# ===== ms-auth =====
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ms-auth-dr
+  namespace: medplatform
+spec:
+  host: ms-auth
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 20
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# ===== ms-doctor =====
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ms-doctor-dr
+  namespace: medplatform
+spec:
+  host: ms-doctor
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 20
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# ===== ms-appointment =====
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ms-appointment-dr
+  namespace: medplatform
+spec:
+  host: ms-appointment
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 20
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# ===== ms-notification =====
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ms-notification-dr
+  namespace: medplatform
+spec:
+  host: ms-notification
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 20
+      http:
+        http1MaxPendingRequests: 10
+        maxRequestsPerConnection: 5
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100  # solo 1 réplica, si falla ejectar

@@ -1,0 +1,90 @@
+# VirtualServices para tráfico EAST-WEST (servicio → servicio dentro del cluster)
+# Aplica retries y timeouts independientemente del Ingress
+
+# ===== ms-auth (interno) =====
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ms-auth-vs
+  namespace: medplatform
+spec:
+  hosts:
+  - ms-auth
+  http:
+  - timeout: 5s
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: gateway-error,connect-failure,refused-stream,5xx
+    route:
+    - destination:
+        host: ms-auth
+---
+# ===== ms-doctor (interno) =====
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ms-doctor-vs
+  namespace: medplatform
+spec:
+  hosts:
+  - ms-doctor
+  http:
+  - timeout: 5s
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: gateway-error,connect-failure,refused-stream,5xx
+    # Para activar fault injection en demo, descomentar:
+    # fault:
+    #   delay:
+    #     percentage:
+    #       value: 100
+    #     fixedDelay: 5s
+    route:
+    - destination:
+        host: ms-doctor
+---
+# ===== ms-appointment (interno) =====
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ms-appointment-vs
+  namespace: medplatform
+spec:
+  hosts:
+  - ms-appointment
+  http:
+  - timeout: 10s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+      retryOn: gateway-error,connect-failure,refused-stream,5xx
+    # Para activar abort injection en demo, descomentar:
+    # fault:
+    #   abort:
+    #     percentage:
+    #       value: 50
+    #     httpStatus: 503
+    route:
+    - destination:
+        host: ms-appointment
+---
+# ===== ms-notification (interno) =====
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ms-notification-vs
+  namespace: medplatform
+spec:
+  hosts:
+  - ms-notification
+  http:
+  - timeout: 5s
+    retries:
+      attempts: 2
+      perTryTimeout: 2s
+      retryOn: gateway-error,connect-failure,refused-stream,5xx
+    route:
+    - destination:
+        host: ms-notification
