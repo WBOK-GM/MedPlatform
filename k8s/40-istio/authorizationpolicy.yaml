@@ -1,0 +1,77 @@
+# AuthorizationPolicy: control de qué servicios pueden hablar con qué otros.
+# Útil para demo de seguridad en la sustentación.
+# Por defecto (con mTLS STRICT) Istio ya rechaza conexiones no-mesh.
+# Estas políticas añaden una capa de control de identidad (service account).
+
+# Permite que el Ingress Gateway y cualquier servicio del namespace medplatform
+# se comunique con ms-auth
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ms-auth
+  namespace: medplatform
+spec:
+  selector:
+    matchLabels:
+      app: ms-auth
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+        - "cluster.local/ns/medplatform/sa/default"
+---
+# Permite acceso a ms-doctor desde Ingress y desde dentro del namespace
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ms-doctor
+  namespace: medplatform
+spec:
+  selector:
+    matchLabels:
+      app: ms-doctor
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+        - "cluster.local/ns/medplatform/sa/default"
+---
+# Permite acceso a ms-appointment desde Ingress y desde dentro del namespace
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ms-appointment
+  namespace: medplatform
+spec:
+  selector:
+    matchLabels:
+      app: ms-appointment
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+        - "cluster.local/ns/medplatform/sa/default"
+---
+# ms-notification solo recibe del Ingress (para /health) y del namespace
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ms-notification
+  namespace: medplatform
+spec:
+  selector:
+    matchLabels:
+      app: ms-notification
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+        - "cluster.local/ns/medplatform/sa/default"

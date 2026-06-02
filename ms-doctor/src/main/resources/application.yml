@@ -35,7 +35,3 @@ logging:
     com.encuentratumedico: DEBUG
     org.springframework.data.mongodb: INFO
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://ms-eureka:8761/eureka/}

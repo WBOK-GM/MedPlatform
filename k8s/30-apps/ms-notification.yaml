@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-notification
+  namespace: medplatform
+spec:
+  replicas: 1  # Consumer único de Redis Pub/Sub — escalar duplicaría notificaciones
+  selector:
+    matchLabels:
+      app: ms-notification
+  template:
+    metadata:
+      labels:
+        app: ms-notification
+        version: v1
+    spec:
+      containers:
+      - name: ms-notification
+        image: medplatform/ms-notification:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3004
+        env:
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: medplatform-config
+              key: REDIS_URL
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: sendgrid-secret
+              key: SENDGRID_API_KEY
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 20
+          periodSeconds: 15
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-notification
+  namespace: medplatform
+spec:
+  selector:
+    app: ms-notification
+  ports:
+  - name: http
+    port: 3004
+    targetPort: 3004

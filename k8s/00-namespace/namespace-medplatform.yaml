@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medplatform
+  labels:
+    istio-injection: enabled
