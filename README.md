@@ -3,6 +3,8 @@
 Sistema de gestión de citas médicas basado en microservicios con frontend en Next.js.  
 Arquitectura: **DDD + Hexagonal + Service Mesh (Istio)** sobre Kubernetes.
 
+> Para un manual completo de instalación y configuración, consulta `INSTALLATION.md`.
+
 ---
 
 ## Arquitectura
