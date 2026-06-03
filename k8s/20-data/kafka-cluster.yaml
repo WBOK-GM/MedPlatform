@@ -1,0 +1,86 @@
+# Kafka KRaft single-broker en medplatform-data (apache/kafka:3.9.0, sin Strimzi).
+# Fix K8s: el controller listener usa 127.0.0.1 en lugar de 0.0.0.0.
+# Kafka 3.9 valida effectiveAdvertisedListeners (broker + controller) y rechaza 0.0.0.0.
+# Con un único nodo, el controller se comunica solo consigo mismo vía localhost.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: medplatform-data
+spec:
+  clusterIP: None
+  selector:
+    app: kafka
+  ports:
+  - name: tcp-kafka
+    port: 9092
+    targetPort: 9092
+  - name: tcp-controller
+    port: 9093
+    targetPort: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: medplatform-data
+spec:
+  selector:
+    app: kafka
+  ports:
+  - name: tcp-kafka
+    port: 9092
+    targetPort: 9092
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: medplatform-data
+spec:
+  serviceName: kafka-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: kafka
+        image: apache/kafka:3.9.0
+        ports:
+        - name: tcp-kafka
+          containerPort: 9092
+        - name: tcp-controller
+          containerPort: 9093
+        env:
+        - name: KAFKA_NODE_ID
+          value: "1"
+        - name: KAFKA_PROCESS_ROLES
+          value: "broker,controller"
+        # CONTROLLER bind a 127.0.0.1 (no 0.0.0.0): el nodo único se habla a sí mismo
+        - name: KAFKA_LISTENERS
+          value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://127.0.0.1:9093"
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka.medplatform-data.svc.cluster.local:9092"
+        - name: KAFKA_CONTROLLER_LISTENER_NAMES
+          value: "CONTROLLER"
+        - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+          value: "1@127.0.0.1:9093"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+          value: "0"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"

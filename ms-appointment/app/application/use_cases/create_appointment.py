@@ -1,3 +1,5 @@
+import logging
+
 from ...domain.exceptions import TimeBlockNotFound
 from ...domain.model.appointment import Appointment
 from ...domain.model.value_objects import (
@@ -10,6 +12,8 @@ from ...domain.ports.event_publisher import EventPublisherPort
 from ...domain.ports.unit_of_work import UnitOfWorkPort
 from ..commands import CreateAppointmentCommand
 from ..views import AppointmentView
+
+log = logging.getLogger(__name__)
 
 
 class CreateAppointmentUseCase:
@@ -46,6 +50,9 @@ class CreateAppointmentUseCase:
                 "patient_email": command.patient_email or "",
                 "doctor_email": command.doctor_email or "",
             }
-            self._publisher.publish_all(events, notification_payload=notification_payload)
+            try:
+                self._publisher.publish_all(events, notification_payload=notification_payload)
+            except Exception:
+                log.exception("Publisher failed after create commit — event lost, operation succeeded")
 
             return AppointmentView.of(saved, time_block)

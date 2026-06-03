@@ -94,10 +94,18 @@ def create_appointment(
 @router.put("/appointments/{appointment_id}/cancel", response_model=AppointmentResponse)
 def cancel_appointment(
     appointment_id: str,
+    patient_email: Optional[str] = None,
+    doctor_email: Optional[str] = None,
     use_case: CancelAppointmentUseCase = Depends(get_cancel_appointment_use_case),
 ):
     try:
-        view = use_case.execute(CancelAppointmentCommand(appointment_id=appointment_id))
+        view = use_case.execute(
+            CancelAppointmentCommand(
+                appointment_id=appointment_id,
+                patient_email=patient_email,
+                doctor_email=doctor_email,
+            )
+        )
         return _serialize_appointment(view)
     except AppointmentNotFound as e:
         raise HTTPException(status_code=404, detail="Appointment not found") from e

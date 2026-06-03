@@ -47,6 +47,7 @@ spec:
 
   # ---------- ms-appointment ----------
   # prefix /appointment/ (con slash) → remanente es "appointments?..." → prepend "/" → "/appointments?..." ✓
+  # No reintentar en 5xx: POST /appointments no es idempotente (un 500 post-commit retried → slot OCCUPIED → 400).
   - match:
     - uri:
         prefix: /appointment/
@@ -59,9 +60,9 @@ spec:
           number: 3003
     timeout: 15s
     retries:
-      attempts: 3
-      perTryTimeout: 4s
-      retryOn: 5xx,reset,connect-failure
+      attempts: 2
+      perTryTimeout: 7s
+      retryOn: reset,connect-failure
 
   # ---------- ms-notification ----------
   - match:

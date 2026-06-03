@@ -1,9 +1,13 @@
+import logging
+
 from ...domain.exceptions import AppointmentNotFound
 from ...domain.model.value_objects import AppointmentId, TimeBlockId
 from ...domain.ports.event_publisher import EventPublisherPort
 from ...domain.ports.unit_of_work import UnitOfWorkPort
 from ..commands import CancelAppointmentCommand
 from ..views import AppointmentView
+
+log = logging.getLogger(__name__)
 
 
 class CancelAppointmentUseCase:
@@ -33,6 +37,19 @@ class CancelAppointmentUseCase:
             events = list(appointment.pull_events())
             if released_block is not None:
                 events.extend(released_block.pull_events())
-            self._publisher.publish_all(events)
+
+            notification_payload = None
+            if command.patient_email or command.doctor_email:
+                notification_payload = {
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "doctor_id": appointment.doctor_id,
+                    "patient_email": command.patient_email or "",
+                    "doctor_email": command.doctor_email or "",
+                }
+            try:
+                self._publisher.publish_all(events, notification_payload=notification_payload)
+            except Exception:
+                log.exception("Publisher failed after cancel commit — event lost, operation succeeded")
 
             return AppointmentView.of(appointment)

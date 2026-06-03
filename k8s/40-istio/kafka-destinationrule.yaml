@@ -1,0 +1,12 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: kafka-plaintext
+  namespace: medplatform
+spec:
+  # Kafka vive en medplatform-data sin sidecar Istio.
+  # DISABLE evita que el sidecar del cliente intente originar mTLS hacia un destino sin sidecar.
+  host: "kafka.medplatform-data.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: DISABLE

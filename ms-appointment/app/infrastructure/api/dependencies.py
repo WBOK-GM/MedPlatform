@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-import redis
+from kafka import KafkaProducer
 from sqlalchemy.orm import sessionmaker
 
 from ...application.use_cases.cancel_appointment import CancelAppointmentUseCase
@@ -15,23 +15,28 @@ from ...application.use_cases.queries import (
 )
 from ...application.use_cases.update_appointment_notes import UpdateAppointmentNotesUseCase
 from ...application.use_cases.update_appointment_status import UpdateAppointmentStatusUseCase
-from ..messaging.redis_event_publisher import RedisEventPublisher
+from ..messaging.kafka_event_publisher import KafkaEventPublisher
 from ..persistence.database import SessionLocal
 from ..persistence.sqlalchemy_uow import SqlAlchemyUnitOfWork
 from ...config import settings
 
 
 @lru_cache(maxsize=1)
-def get_redis_client() -> "redis.Redis":
-    return redis.from_url(settings.redis_url, decode_responses=True)
+def get_kafka_producer() -> "KafkaProducer":
+    return KafkaProducer(
+        bootstrap_servers=settings.kafka_bootstrap_servers.split(","),
+        acks="all",
+        retries=3,
+        linger_ms=5,
+    )
 
 
 def get_session_factory() -> sessionmaker:
     return SessionLocal
 
 
-def get_event_publisher() -> RedisEventPublisher:
-    return RedisEventPublisher(get_redis_client())
+def get_event_publisher() -> KafkaEventPublisher:
+    return KafkaEventPublisher(get_kafka_producer())
 
 
 def get_uow() -> SqlAlchemyUnitOfWork:

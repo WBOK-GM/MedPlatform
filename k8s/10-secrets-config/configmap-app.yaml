@@ -8,8 +8,8 @@ data:
   MS_AUTH_URL: "http://ms-auth:3001"
   MS_APPOINTMENT_URL: "http://ms-appointment:3003"
   MS_DOCTOR_URL: "http://ms-doctor:3002"
-  # Redis y DBs están en medplatform-data, se accede por FQDN
-  REDIS_URL: "redis://redis.medplatform-data.svc.cluster.local:6379/0"
+  # Kafka KRaft (StatefulSet directo) en medplatform-data
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.medplatform-data.svc.cluster.local:9092"
   # Postgres para ms-auth
   DB_HOST: "postgres-users.medplatform-data.svc.cluster.local"
   DB_PORT: "5432"

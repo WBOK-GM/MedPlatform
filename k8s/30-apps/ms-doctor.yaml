@@ -36,6 +36,11 @@ spec:
             configMapKeyRef:
               name: medplatform-config
               key: MS_APPOINTMENT_URL
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: medplatform-config
+              key: KAFKA_BOOTSTRAP_SERVERS
         readinessProbe:
           httpGet:
             path: /doctors?page=0&size=1
