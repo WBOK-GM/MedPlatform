@@ -26,11 +26,11 @@ spec:
             configMapKeyRef:
               name: medplatform-config
               key: DATABASE_URL
-        - name: REDIS_URL
+        - name: KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
               name: medplatform-config
-              key: REDIS_URL
+              key: KAFKA_BOOTSTRAP_SERVERS
         readinessProbe:
           httpGet:
             path: /docs

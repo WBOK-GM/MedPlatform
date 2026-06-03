@@ -51,6 +51,11 @@ spec:
             secretKeyRef:
               name: jwt-secret
               key: JWT_SECRET
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: medplatform-config
+              key: KAFKA_BOOTSTRAP_SERVERS
         readinessProbe:
           httpGet:
             path: /api

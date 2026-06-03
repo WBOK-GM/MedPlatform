@@ -27,6 +27,8 @@ class CreateAppointmentCommand:
 @dataclass(frozen=True)
 class CancelAppointmentCommand:
     appointment_id: str
+    patient_email: Optional[str] = None
+    doctor_email: Optional[str] = None
 
 
 @dataclass(frozen=True)

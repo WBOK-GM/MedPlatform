@@ -15,7 +15,7 @@ import { USER_REPOSITORY } from './domain/ports/out/user.repository';
 import { AuthController } from './infrastructure/http/auth.controller';
 import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exception.filter';
 import { JwtStrategy } from './infrastructure/http/strategies/jwt.strategy';
-import { LoggingEventPublisher } from './infrastructure/messaging/logging-event-publisher';
+import { KafkaEventPublisher } from './infrastructure/messaging/kafka-event-publisher';
 import { CredentialOrmEntity } from './infrastructure/persistence/entities/credential.orm-entity';
 import { UserOrmEntity } from './infrastructure/persistence/entities/user.orm-entity';
 import { TypeOrmUserRepository } from './infrastructure/persistence/typeorm-user.repository';
@@ -46,7 +46,7 @@ import { NestJwtTokenSigner } from './infrastructure/security/nest-jwt-token-sig
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
     { provide: PASSWORD_HASHER, useClass: BcryptPasswordHasher },
     { provide: TOKEN_SIGNER, useClass: NestJwtTokenSigner },
-    { provide: EVENT_PUBLISHER, useClass: LoggingEventPublisher },
+    { provide: EVENT_PUBLISHER, useClass: KafkaEventPublisher },
     { provide: REGISTER_USER_USE_CASE, useExisting: AuthApplicationService },
     { provide: LOGIN_USE_CASE, useExisting: AuthApplicationService },
     { provide: GET_USER_BY_ID_USE_CASE, useExisting: AuthApplicationService },

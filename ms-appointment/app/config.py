@@ -8,11 +8,11 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
-    redis_url: str
+    kafka_bootstrap_servers: str
     service_port: int
 
 
 settings = Settings(
-    redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+    kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
     service_port=int(os.getenv("SERVICE_PORT", "3003")),
 )

@@ -4,7 +4,7 @@ metadata:
   name: ms-notification
   namespace: medplatform
 spec:
-  replicas: 1  # Consumer único de Redis Pub/Sub — escalar duplicaría notificaciones
+  replicas: 1  # Consumer Kafka con group_id fijo — se puede escalar hasta nº de particiones (3) sin duplicar
   selector:
     matchLabels:
       app: ms-notification
@@ -21,11 +21,11 @@ spec:
         ports:
         - containerPort: 3004
         env:
-        - name: REDIS_URL
+        - name: KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
               name: medplatform-config
-              key: REDIS_URL
+              key: KAFKA_BOOTSTRAP_SERVERS
         - name: SENDGRID_API_KEY
           valueFrom:
             secretKeyRef:
