@@ -31,6 +31,8 @@ spec:
             secretKeyRef:
               name: sendgrid-secret
               key: SENDGRID_API_KEY
+        - name: ROOT_PATH
+          value: "/notification"
         readinessProbe:
           httpGet:
             path: /health

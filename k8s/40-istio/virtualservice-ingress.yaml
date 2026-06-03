@@ -29,11 +29,16 @@ spec:
   # ---------- ms-doctor ----------
   # prefix /doctor/ (con slash) → remanente es "doctors?..." (sin slash) → prepend "/" → "/doctors?..." ✓
   # Sin trailing slash causaría: strip /doctor de /doctor/doctors → /doctors → prepend / → //doctors (doble slash)
+  # x-forwarded-prefix: springdoc lo lee para prefixar swagger-ui y api-docs correctamente
   - match:
     - uri:
         prefix: /doctor/
     rewrite:
       uri: /
+    headers:
+      request:
+        set:
+          x-forwarded-prefix: /doctor
     route:
     - destination:
         host: ms-doctor

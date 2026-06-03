@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Kafka, Producer } from 'kafkajs';
-import { DomainEvent } from '../../../../shared/domain-event';
+import { DomainEvent } from '../../../shared/domain-event';
 import { EventPublisher } from '../../domain/ports/out/event-publisher';
 
 const TOPIC = 'auth-events';
@@ -33,7 +33,7 @@ export class KafkaEventPublisher
     if (!events?.length) return;
 
     const messages = events.map((event) => {
-      const e = event as Record<string, unknown>;
+      const e = event as unknown as Record<string, unknown>;
       const aggregateId = String(e['userId'] ?? e['email'] ?? 'unknown');
       const envelope = {
         eventName: event.eventName(),

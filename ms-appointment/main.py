@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +12,9 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Appointment Microservice",
-    description="Agendamiento de Citas Médicas (DDD + Hexagonal)",
+    description="Gestión de citas médicas y bloques de disponibilidad. Arquitectura DDD + Hexagonal.",
+    version="1.0.0",
+    root_path=os.getenv("ROOT_PATH", ""),
 )
 
 app.add_middleware(
