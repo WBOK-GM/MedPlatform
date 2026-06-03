@@ -60,9 +60,11 @@ SENDGRID_API_KEY=TU_SENDGRID_API_KEY_AQUI
 
 ### 3.2 Frontend
 
-Crea el archivo `frontend/.env.local` con las URLs de los microservicios según el modo de ejecución.
+En `docker compose` local, el servicio `frontend` recibe sus variables de entorno desde `docker-compose.yml` y no es necesario crear `frontend/.env.local` para ejecutar la pila completa.
 
-#### Para Docker Compose local
+Si ejecutas el frontend de forma independiente con `npm run dev`, sí debes crear `frontend/.env.local` con las URLs apropiadas.
+
+#### Para Docker Compose local (opcional si no ejecutas Next.js fuera de Docker)
 
 ```env
 NEXT_PUBLIC_AUTH_URL=http://localhost:3001
@@ -71,7 +73,7 @@ NEXT_PUBLIC_APPOINTMENT_URL=http://localhost:3003
 NEXT_PUBLIC_NOMINATIM_EMAIL=tu-email@dominio.com
 ```
 
-#### Para Kubernetes + Istio (Kind)
+#### Para Kubernetes + Istio (Kind) y frontend local
 
 Crea `frontend/.env.k8s.local` con este contenido:
 
