@@ -19,3 +19,6 @@ data:
   DATABASE_URL: "postgresql://postgres:postgrespassword@postgres-appointments.medplatform-data.svc.cluster.local:5432/appointments_db"
   # MongoDB para ms-doctor
   MONGODB_URI: "mongodb://root:rootpassword@mongodb.medplatform-data.svc.cluster.local:27017/doctors_db?authSource=admin"
+  # OAuth2 Google (ms-auth) — el callback pasa por el Ingress de Istio (prefijo /auth intacto)
+  GOOGLE_CALLBACK_URL: "http://localhost/auth/google/callback"
+  FRONTEND_URL: "http://localhost"

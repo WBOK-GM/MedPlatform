@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { User } from '../../domain/model/user';
 import { Email } from '../../domain/model/value-objects/email';
+import { ProviderId } from '../../domain/model/value-objects/provider-id';
 import { UserId } from '../../domain/model/value-objects/user-id';
 import { UserRole } from '../../domain/model/value-objects/user-role';
 import { EmailAlreadyTakenError } from '../../domain/exceptions/email-already-taken.error';
@@ -8,6 +9,7 @@ import { InvalidCredentialsError } from '../../domain/exceptions/invalid-credent
 import { UserNotFoundError } from '../../domain/exceptions/user-not-found.error';
 import { GetUserByIdUseCase } from '../../domain/ports/in/get-user-by-id.use-case';
 import { LoginUseCase } from '../../domain/ports/in/login.use-case';
+import { LoginWithGoogleUseCase } from '../../domain/ports/in/login-with-google.use-case';
 import { RegisterUserUseCase } from '../../domain/ports/in/register-user.use-case';
 import {
   EVENT_PUBLISHER,
@@ -26,13 +28,18 @@ import {
   UserRepository,
 } from '../../domain/ports/out/user.repository';
 import { LoginCommand } from '../commands/login.command';
+import { LoginWithGoogleCommand } from '../commands/login-with-google.command';
 import { RegisterUserCommand } from '../commands/register-user.command';
 import { AuthTokenView } from '../views/auth-token.view';
 import { UserView } from '../views/user.view';
 
 @Injectable()
 export class AuthApplicationService
-  implements RegisterUserUseCase, LoginUseCase, GetUserByIdUseCase
+  implements
+    RegisterUserUseCase,
+    LoginUseCase,
+    LoginWithGoogleUseCase,
+    GetUserByIdUseCase
 {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
@@ -65,6 +72,23 @@ export class AuthApplicationService
     await this.publisher.publishAll(user.pullEvents());
     const token = this.tokens.signAccessToken(user);
     return new AuthTokenView(token, UserView.fromAggregate(user));
+  }
+
+  async loginWithGoogle(
+    command: LoginWithGoogleCommand,
+  ): Promise<AuthTokenView> {
+    const email = Email.of(command.email);
+    const providerId = ProviderId.of(command.googleId);
+    let user = await this.users.findByEmail(email);
+    if (!user) {
+      user = User.registerWithGoogle(email, UserRole.patient(), providerId);
+    } else {
+      user.linkGoogle(providerId);
+    }
+    const saved = await this.users.save(user);
+    await this.publisher.publishAll(user.pullEvents());
+    const token = this.tokens.signAccessToken(saved);
+    return new AuthTokenView(token, UserView.fromAggregate(saved));
   }
 
   async getById(id: string): Promise<UserView> {

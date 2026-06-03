@@ -48,6 +48,8 @@ design/
 **/.env
 **/.env.*
 !**/.env.example
+# Secret real de Google OAuth (usa secret-google-oauth.yaml.example como plantilla)
+k8s/10-secrets-config/secret-google-oauth.yaml
 
 # ─── Docker volumes (local data) ─────────────
 postgres_data/
