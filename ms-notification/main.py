@@ -2,8 +2,10 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
+from typing import Dict
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 from kafka import KafkaConsumer
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -140,13 +142,33 @@ async def lifespan(app: FastAPI):
     yield
 
 
+class HealthResponse(BaseModel):
+    status: str
+
+
 app = FastAPI(
     title="Notification Microservice",
-    description="Servicio de notificaciones vía Kafka (EDA)",
+    description=(
+        "Servicio de notificaciones por email (SendGrid). Es **event-driven**: no expone endpoints de negocio, "
+        "sino que consume el event bus Kafka y dispara emails en respuesta a los siguientes eventos:\n\n"
+        "| Evento | Topic | Acción |\n"
+        "|--------|-------|--------|\n"
+        "| `appointment.created` | appointment-events | Email de confirmación al paciente y al médico |\n"
+        "| `appointment.cancelled` | appointment-events | Email de cancelación al paciente |\n"
+        "| `user.registered` | auth-events | Email de bienvenida al nuevo usuario |"
+    ),
+    version="1.0.0",
+    root_path=os.getenv("ROOT_PATH", ""),
     lifespan=lifespan,
 )
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["Health"],
+    summary="Verificar estado del servicio",
+    description="Devuelve `{status: ok}` si el servicio está activo. El consumer Kafka arranca en background al iniciar.",
+)
 def health_check():
     return {"status": "ok"}
