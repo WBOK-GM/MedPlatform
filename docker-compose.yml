@@ -91,6 +91,11 @@ services:
       - DB_PASSWORD=postgrespassword
       - DB_NAME=users_db
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # OAuth2 Google — Client ID/Secret se leen del entorno o de un .env no versionado
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
+      - FRONTEND_URL=http://localhost:3000
     depends_on:
       postgres-users:
         condition: service_healthy

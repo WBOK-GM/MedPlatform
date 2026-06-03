@@ -77,6 +77,11 @@ const messages: Record<Language, Messages> = {
     'login.invalidCredentials': 'Credenciales inválidas. Intenta de nuevo.',
     'login.noAccount': '¿No tienes cuenta?',
     'login.createOne': 'Crear una →',
+    'login.or': 'o',
+    'login.continueWithGoogle': 'Continuar con Google',
+
+    'oauth.connecting': 'Conectando con Google...',
+    'oauth.failed': 'No se pudo completar el inicio de sesión con Google.',
 
     'register.title': 'Registro',
     'register.heading': 'Crear cuenta',
@@ -366,6 +371,11 @@ const messages: Record<Language, Messages> = {
     'login.invalidCredentials': 'Invalid credentials. Please try again.',
     'login.noAccount': "Don't have an account?",
     'login.createOne': 'Create one →',
+    'login.or': 'or',
+    'login.continueWithGoogle': 'Continue with Google',
+
+    'oauth.connecting': 'Connecting with Google...',
+    'oauth.failed': 'Could not complete Google sign-in.',
 
     'register.title': 'Register',
     'register.heading': 'Create Account',

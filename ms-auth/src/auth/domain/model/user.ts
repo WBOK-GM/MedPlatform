@@ -43,6 +43,18 @@ export class User extends AggregateRoot {
     return user;
   }
 
+  static registerWithGoogle(
+    email: Email,
+    role: UserRole,
+    providerId: ProviderId,
+  ): User {
+    const id = UserId.generate();
+    const credential = Credential.google(providerId);
+    const user = new User(id, email, role, null, true, [credential]);
+    user.record(new UserRegistered(id.value, email.value, role.value));
+    return user;
+  }
+
   static rehydrate(snapshot: UserSnapshot): User {
     return new User(
       UserId.of(snapshot.id),

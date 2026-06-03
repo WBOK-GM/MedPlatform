@@ -7,18 +7,23 @@ import {
   Inject,
   Param,
   Post,
+  Req,
   Request,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiExcludeEndpoint,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { AuthTokenView } from '../../application/views/auth-token.view';
 import { UserView } from '../../application/views/user.view';
 import { LoginCommand } from '../../application/commands/login.command';
@@ -31,6 +36,11 @@ import {
   LOGIN_USE_CASE,
   LoginUseCase,
 } from '../../domain/ports/in/login.use-case';
+import {
+  LOGIN_WITH_GOOGLE_USE_CASE,
+  LoginWithGoogleUseCase,
+} from '../../domain/ports/in/login-with-google.use-case';
+import { LoginWithGoogleCommand } from '../../application/commands/login-with-google.command';
 import {
   REGISTER_USER_USE_CASE,
   RegisterUserUseCase,
@@ -47,6 +57,9 @@ export class AuthController {
     @Inject(LOGIN_USE_CASE) private readonly loginUseCase: LoginUseCase,
     @Inject(GET_USER_BY_ID_USE_CASE)
     private readonly getUserById: GetUserByIdUseCase,
+    @Inject(LOGIN_WITH_GOOGLE_USE_CASE)
+    private readonly loginWithGoogle: LoginWithGoogleUseCase,
+    private readonly config: ConfigService,
   ) {}
 
   @Post('register')
@@ -70,6 +83,43 @@ export class AuthController {
   @ApiOkResponse({ description: 'Credenciales válidas. Devuelve el token y datos del usuario', type: AuthTokenView })
   async login(@Body() dto: LoginDto) {
     return this.loginUseCase.login(new LoginCommand(dto.email, dto.password));
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Iniciar sesión con Google (OAuth2)',
+    description:
+      'Redirige al usuario a la pantalla de consentimiento de Google. Tras autorizar, Google redirige a /auth/google/callback. Abrir esta URL en el navegador (no es una llamada AJAX).',
+  })
+  googleAuth(): void {
+    // El guard 'google' inicia el flujo OAuth redirigiendo a Google.
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiExcludeEndpoint()
+  async googleAuthCallback(
+    @Req() req: { user: { googleId: string; email: string; name?: string } },
+    @Res() res: Response,
+  ): Promise<void> {
+    const token = await this.loginWithGoogle.loginWithGoogle(
+      new LoginWithGoogleCommand(
+        req.user.googleId,
+        req.user.email,
+        req.user.name,
+      ),
+    );
+    const frontendUrl = this.config.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const params = new URLSearchParams({
+      token: token.access_token,
+      role: token.user.role,
+      email: token.user.email,
+    });
+    res.redirect(`${frontendUrl}/oauth/callback?${params.toString()}`);
   }
 
   @Get('users/:id')

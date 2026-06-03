@@ -56,6 +56,26 @@ spec:
             configMapKeyRef:
               name: medplatform-config
               key: KAFKA_BOOTSTRAP_SERVERS
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: GOOGLE_CLIENT_SECRET
+        - name: GOOGLE_CALLBACK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: medplatform-config
+              key: GOOGLE_CALLBACK_URL
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: medplatform-config
+              key: FRONTEND_URL
         readinessProbe:
           httpGet:
             path: /auth/docs
